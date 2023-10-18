@@ -44,3 +44,10 @@ class DataFrameNotFoundError(Exception):
     Esta excepción debería ser lanzada cuando no se encuentre un DataFrame o este no sea válido.
     """
     pass
+
+class SparkSessionError(Exception):
+    """
+    Excepción personalizada para errores relacionados con problemas con la sesión de Spark.
+    Esta excepción debería ser lanzada cuando haya errores con el manejo de la sesión de Spark.
+    """
+    pass

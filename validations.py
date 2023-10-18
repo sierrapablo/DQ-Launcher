@@ -12,28 +12,128 @@ from pyspark.sql.functions import col, when, count, lit
 from pyspark.sql.window import Window
 import pandas as pd
 import traceback
+from typing import Optional
+import os, logging, datetime
+from validation_errors import *
 
 from validation_errors import DataLoadingError
 
 
 class Validator:
 
-    def __init__(self,
-                 spark: SparkSession,
-                 logger: logging.Logger):
+    def __init__(self, logger: Optional[logging.Logger] = None, spark: Optional[SparkSession] = None, log_folder: Optional[str] = "logs"):
         """
-        Constructor de la clase.
+        Constructor de la clase Validator.
 
         Args:
-            spark (SparkSession): Objeto SparkSession 
-                utilizado para interactuar con Spark.
-            logger (logging.Logger): Objeto Logger para registrar mensajes y eventos.
+            logger (Optional[logging.Logger]): Objeto Logger para registrar mensajes y eventos.
+                Si no se proporciona, se creará uno por defecto.
+            spark (Optional[SparkSession]): Objeto SparkSession utilizado para interactuar con Spark.
+                Si no se proporciona, se creará uno por defecto.
+            log_folder (Optional[str]): Ruta del directorio donde se almacenarán los archivos de registro. 
+                Por defecto, se utiliza "logs" como nombre del directorio.
 
         Returns:
             None
         """
-        self.spark = spark
-        self.logger = logger
+        if logger is None:
+            logger = self.configure_logger()
+        else:
+            self.logger = logger
+
+        if spark is None:
+            spark = self.create_spark_session()
+        else:
+            self.spark = spark
+
+    @staticmethod
+    def configure_logger(log_folder: Optional[str] = "logs") -> logging.Logger:
+        """
+        Configura y devuelve un objeto Logger.
+
+        Args:
+            log_folder (Optional[str]): Ruta del directorio donde se almacenarán los archivos de registro.
+                Por defecto, se utiliza "logs" como nombre del directorio.
+
+        Returns:
+            logging.Logger: Objeto Logger configurado para registrar mensajes en archivos de registro.
+
+        Raises:
+            ConfigurationError: Si ocurre un error al configurar el Logger, como problemas al crear el directorio de registros.
+        """
+        current_datetime = datetime.datetime.now()
+        try:
+            if not os.path.exists(log_folder):
+                os.makedirs(log_folder)
+        except Exception as e:
+            error_message = f'Error occurred while creating log directory: {str(e)}'
+            logging.error(error_message)
+            logging.exception('Traceback: %s', traceback.format_exc())
+            raise ConfigurationError(error_message)
+        
+        log_filename = os.path.join(
+            log_folder,
+            f'log_{current_datetime.strftime("%Y-%m-%d_%H-%M-%S")}.log'
+        )
+
+        logger = logging.getLogger('validations_logger')
+        logger.setLevel(logging.INFO)
+
+        formatter = logging.Formatter(
+            '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        )
+
+        file_handler = logging.FileHandler(log_filename)
+        file_handler.setFormatter(formatter)
+
+        logger.addHandler(file_handler)
+
+        return logger
+
+    def create_spark_session(self, app_name: str = "Validator APP") -> SparkSession:
+        """
+        Crea una sesión de Spark y la devuelve.
+
+        Args:
+            app_name (str): Nombre de la aplicación Spark. Por defecto, se utiliza "Validator APP".
+
+        Returns:
+            SparkSession: Objeto SparkSession creado y configurado para la aplicación.
+
+        Raises:
+            SparkSessionError: Si ocurre un error al crear la sesión de Spark.
+        """
+        try:
+            self.logger.info('Creating Spark Session')
+            spark = SparkSession.builder \
+                .appName(app_name) \
+                .getOrCreate()
+            self.logger.info('Spark Session successfully created: ' + app_name)
+        except Exception as e:
+            spark_error_msg = 'Error occurred while creating Spark session: ' + \
+                str(e)
+            self.logger.exception(spark_error_msg)
+            self.logger.exception('Traceback: %s', traceback.format_exc())
+            raise SparkSessionError('Error with Spark Session: ' + str(e))
+        return spark
+
+    def close_spark_session(self):
+        """
+        Cierra la sesión de Spark si está abierta.
+
+        Raises:
+            SparkSessionError: Si ocurre un error al cerrar la sesión de Spark.
+        """
+        if hasattr(self, 'spark') and self.spark is not None:
+            try:
+                self.logger.info('Closing Spark Session')
+                self.spark.stop()
+                self.logger.info('Spark Session closed successfully')
+            except Exception as e:
+                spark_error_msg = 'Error occurred while closing Spark session: ' + str(e)
+                self.logger.exception(spark_error_msg)
+                self.logger.exception('Traceback: %s', traceback.format_exc())
+                raise SparkSessionError(spark_error_msg)
 
     def check_informed_fields(self, dataframe: DataFrame, column: str) -> DataFrame:
         """
@@ -114,7 +214,7 @@ class Validator:
             self.logger.exception('Traceback: %s', traceback.format_exc())
             raise DataLoadingError('Data loading error: ' + str(e))
 
-        flag_col_name = column+'_VALIDO'
+        flag_col_name = column+'_VALID'
         dataframe = dataframe.withColumn(flag_col_name, lit(0))
         for row in dataframe.rdd.collect():
             column_value = row[column]
@@ -124,29 +224,244 @@ class Validator:
 
         return dataframe
 
-    def validar_formato_y_patrones(self, datos):
-        # Implementar lógica para validar formato y patrones
+    
+    def check_data_length(self, dataframe: DataFrame, column: str, data_lenght: int) -> DataFrame:
+        """
+        Verifica si cada campo de una columna coincide con la longitud especificada.
+        Añade una columna con los valores: EQUAL si coincide, +-n según si es más o menos largo.
+
+        Args:
+            dataframe (DataFrame): DataFrame de PySpark.
+            column (str): Nombre de la columna que se va a validar.
+            data_length (int): longitud del campo.
+
+        Returns:
+            dataframe (DataFrame): DataFrame con la columna añadida.
+        """
+
+        pass
+
+    def check_data_type(self, dataframe: DataFrame, column: str, data_type: str) -> int:
+        """
+        Verifica si la columna dada en el dataframe es de tipo especificado.
+
+        Args:
+            dataframe (DataFrame): El dataframe que contiene la columna.
+            columna (str): Nombre de la columna que se verificará.
+
+        Returns:
+            int: 1 si la columna es del tipo concreto, 0 si no lo es.
+        """
+
         pass
 
     # Transformación y Estandarización de Datos
-    def estandarizar_nombres_apellidos(self, datos):
-        # Implementar lógica para estandarizar nombres y apellidos
+    def std_name(self, dataframe: DataFrame, column: str, mode: Optional[str] = "overwrite") -> DataFrame:
+        """
+        Estandariza los campos de la columna especificada siguiendo reglas
+        de estandarización de nombres y apellidos. Maneja nombres y apellidos compuestos.
+
+        Args:
+            dataframe (DataFrame): El dataframe que contiene la columna.
+            column (str): Nombre de la columna que se estandarizará.
+            mode (str, optional): Modo de estandarización ("overwrite" por defecto, admite "add").
+
+        Returns:
+            dataframe (DataFrame): DataFrame con la columna estandarizada.
+        """
         pass
 
-    def estandarizar_tipos_documento(self, datos):
-        # Implementar lógica para estandarizar tipos de documento
-        pass
+    def get_null_count(self, dataframe: DataFrame, column: str) -> int:
+        """
+        Cuenta el número de valores nulos en una columna de un PySpark Dataframe.
 
-    # Validación de Longitudes y Tipos de Datos
-    def validar_longitudes(self, datos):
-        # Implementar lógica para validar longitudes
-        pass
+        Args:
+            dataframe (DataFrame): DataFrame de PySpark.
+            column (str): Nombre de la columna que se va a validar.
 
-    def validar_tipos_datos(self, datos):
-        # Implementar lógica para validar tipos de datos
-        pass
+        Returns:
+            null_count (int): Número de valores nulos en la columna.
+        """
+        null_count = dataframe.where(col(column).isNull()).count()
+        return int(null_count)
 
-    # Otros
-    def generar_flags_sexo(self, datos):
-        # Implementar lógica para generar flags de sexo
-        pass
+
+    def get_null_percentage(self, dataframe: DataFrame, column: str) -> float:
+        """
+        Calcula el porcentaje de valores nulos en una columnas del DataFrame.
+
+        Args:
+            dataframe (DataFrame): El DataFrame original.
+            column (str): Nombre de la columna que se va a validar.
+
+        Returns:
+            null_percentage_rounded (float): valor porcentual de nulos en la columna.
+        """
+        total_count = dataframe.count()
+        null_count = self.get_null_count(dataframe, column)
+        null_percentage = (null_count / total_count) * 100.0
+        null_percentage_rounded = round(null_percentage, 2)
+        return float(null_percentage_rounded)
+
+
+    def get_informed_count(self, dataframe: DataFrame, column: str) -> int:
+        """
+        Cuenta el número de campos informados (no nulos) en una columna del DataFrame.
+
+        Args:
+            dataframe (DataFrame): DataFrame de PySpark.
+            column (str): Nombre de la columna que se va a validar.
+
+        Returns:
+            informed_count (int): Número de campos informados en la columna.
+        """
+        informed_count = dataframe.where(col(column).isNotNull()).count()
+        return int(informed_count)
+
+
+    def get_informed_percentage(self, dataframe: DataFrame, column: str) -> float:
+        """
+        Calcula el porcentaje de campos informados en una columna del DataFrame.
+
+        Args:
+            dataframe (DataFrame): DataFrame de PySpark.
+            column (str): Nombre de la columna que se va a validar.
+
+        Returns:
+            informed_percentage_rounded (float): valor (%) de informados en la columna.
+        """
+        total_count = dataframe.count()
+        informed_count = self.get_informed_count(dataframe, column)
+        informed_percentage = (informed_count / total_count) * 100.0
+        informed_percentage_rounded = round(informed_percentage, 2)
+        return float(informed_percentage_rounded)
+
+
+    def get_unique_count(self, dataframe: DataFrame, column: str) -> int:
+        """
+        Cuenta el número de valores únicos en una columna del DataFrame.
+
+        Args:
+            dataframe (DataFrame): DataFrame de PySpark.
+            column (str): Nombre de la columna que se va a validar.
+
+        Returns:
+            unique_count (int): Número de valores únicos en la columna.
+        """
+        unique_count = dataframe.select(column).distinct().count()
+        return int(unique_count)
+
+
+    def get_unique_percentage(self, dataframe: DataFrame, column: str) -> float:
+        """
+        Calcula el porcentaje de valores únicos en una columna del DataFrame.
+
+        Args:
+            dataframe (DataFrame): DataFrame de PySpark.
+            column (str): Nombre de la columna que se va a validar.
+
+        Returns:
+            unique_percentage_rounded (float): valor (%) de únicos en la columna.
+        """
+        total_count = dataframe.count()
+        unique_count = self.get_unique_count(dataframe, column)
+        unique_percentage = (unique_count / total_count) * 100.0
+        informed_percentage_rounded = round(unique_percentage, 2)
+        return float(informed_percentage_rounded)
+    
+    def load_data_from_excel(self,
+                             file_path: str,
+                             sheet_name: str) -> DataFrame:
+        """
+        Carga datos desde un archivo Excel a un DataFrame de Spark.
+
+        Args:
+            file_path (str): Ruta del archivo Excel.
+            sheet_name (str): Nombre de la hoja en el archivo Excel.
+
+        Returns:
+            DataFrame: DataFrame de Spark que contiene los datos del archivo Excel.
+
+        Raises:
+            Exception: Si ocurre un error al cargar los datos desde el archivo Excel.
+        """
+        try:
+            self.logger.info('Loading data from: ' + file_path)
+            data_pd = pd.read_excel(file_path, sheet_name=sheet_name)
+            data_df = self.spark.createDataFrame(data_pd)
+            self.logger.info('Data successfully read from: ' + file_path)
+            return data_df
+        except FileNotFoundError as e:
+            self.logger.exception('File not found: ' + file_path)
+            self.logger.exception(
+                'Error while searching for ' + file_path + '. ' + str(e)
+            )
+            self.logger.exception('Traceback: %s', traceback.format_exc())
+            raise DataLoadingError('Data loading error: ' + str(e))
+        except Exception as e:
+            self.logger.exception(
+                'Error occurred while loading data: ' + str(e)
+            )
+            self.logger.exception('Traceback: %s', traceback.format_exc())
+            raise DataLoadingError('Data loading error: ' + str(e))
+        
+    def save_to_postgres(self,
+                         df: DataFrame,
+                         connection_url: str,
+                         table_name: str,
+                         connection_properties: dict,
+                         writing_mode: str):
+        """
+        Guarda un DataFrame de Spark en una tabla PostgreSQL con una conexión JDBC.
+
+        Args:
+            results_df (DataFrame): DataFrame de Spark que se va a guardar en la BD.
+            connection_url (str): URL de conexión a la base de datos PostgreSQL.
+            table_name (str): Nombre de la tabla en la que se van a guardar los datos.
+            connection_properties (dict): Propiedades de la conexión a la BD PostgreSQL.
+            writing_mode (str): Modo de escritura para la tabla:
+                ("overwrite", "append", "ignore", "error").
+
+        Raises:
+            Exception: Si ocurre un error al guardar los datos en la BD PostgreSQL.
+        """
+        try:
+            df.write.jdbc(
+                url=connection_url,
+                table=table_name,
+                mode=writing_mode,
+                properties=connection_properties
+            )
+            self.logger.info(
+                'Table correctly updated in the Database: ' + table_name)
+        except Exception as e:
+            self.logger.exception(
+                f'Error occurred while saving data in {table_name}: {str(e)}'
+            )
+            self.logger.exception('Traceback: %s', traceback.format_exc())
+            raise DataLoadingError('Data loading error: ' + str(e))
+
+    def filter_df(self, df: DataFrame, column: str, value: str) -> DataFrame:
+        """
+        Filtra un DataFrame en función de una columna y un valor específico.
+
+        Args:
+            df (DataFrame): El DataFrame de PySpark que se va a filtrar.
+            column (str): El nombre de la columna en la que se aplicará el filtro.
+            value (str): El valor que se utilizará para filtrar los datos en la columna especificada.
+
+        Returns:
+            DataFrame: Un nuevo DataFrame que contiene solo las filas donde la columna especificada tiene el valor dado.
+        """
+        self.logger.info('Filtering data from ' + column + '=' + value)
+
+        try:
+            # Intenta filtrar el DataFrame por el valor dado en la columna especificada
+            df_filtered = df.filter(col(column) == value)
+
+        except Exception as e:
+            # Captura cualquier excepción que ocurra durante el filtrado
+            self.logger.exception('Traceback: %s', traceback.format_exc())
+            raise DataFrameNotFoundError('Dataframe not found: ' + str(e))
+
+        return df_filtered
