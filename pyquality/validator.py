@@ -5,14 +5,14 @@ Author: Pablo Sierra Lorente
 Year: 2023
 """
 
-from pyspark.sql import SparkSession, DataFrame
-from pyspark.sql.functions import col, when, count, broadcast, length, regexp_replace, upper, trim
-from pyspark.sql.window import Window
-from pyspark.sql.types import DataType
-import pandas as pd
-from typing import Optional
+import pandas
 from pyquality.utilities.errors import *
-from pyquality.utilities.functions import close_spark_session
+from pyquality.utilities.functions import *
+from pyspark.sql import SparkSession, DataFrame
+from pyspark.sql.functions import *
+from pyspark.sql.types import DataType
+from pyspark.sql.window import Window
+from typing import Optional
 
 
 class Validator:
@@ -112,9 +112,9 @@ class Validator:
         """
         try:
             if table_ref.endswith('.xlsx'):
-                ref_pd = pd.read_excel(table_ref, sheet_name=sheet_name)
+                ref_pd = pandas.read_excel(table_ref, sheet_name=sheet_name)
             elif table_ref.endswith('.csv'):
-                ref_pd = pd.read_csv(table_ref)
+                ref_pd = pandas.read_csv(table_ref)
             else:
                 raise DataLoadingError('Unsupported file format.')
             ref_df = self.spark.createDataFrame(ref_pd)
