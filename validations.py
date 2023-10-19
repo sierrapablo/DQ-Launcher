@@ -16,30 +16,21 @@ from typing import Optional
 import os, logging, datetime
 from validation_errors import *
 
-from validation_errors import DataLoadingError
 
 
 class Validator:
 
-    def __init__(self, logger: Optional[logging.Logger] = None, spark: Optional[SparkSession] = None, log_folder: Optional[str] = "logs"):
+    def __init__(self, spark: Optional[SparkSession] = None,):
         """
         Constructor de la clase Validator.
 
         Args:
-            logger (Optional[logging.Logger]): Objeto Logger para registrar mensajes y eventos.
-                Si no se proporciona, se creará uno por defecto.
             spark (Optional[SparkSession]): Objeto SparkSession utilizado para interactuar con Spark.
                 Si no se proporciona, se creará uno por defecto.
-            log_folder (Optional[str]): Ruta del directorio donde se almacenarán los archivos de registro. 
-                Por defecto, se utiliza "logs" como nombre del directorio.
 
         Returns:
             None
         """
-        if logger is None:
-            logger = self.configure_logger()
-        else:
-            self.logger = logger
 
         if spark is None:
             spark = self.create_spark_session()
@@ -67,8 +58,8 @@ class Validator:
                 os.makedirs(log_folder)
         except Exception as e:
             error_message = f'Error occurred while creating log directory: {str(e)}'
-            logging.error(error_message)
-            logging.exception('Traceback: %s', traceback.format_exc())
+            print(error_message)
+            print('Traceback: %s', traceback.format_exc())
             raise ConfigurationError(error_message)
         
         log_filename = os.path.join(
@@ -90,7 +81,8 @@ class Validator:
 
         return logger
 
-    def create_spark_session(self, app_name: str = "Validator APP") -> SparkSession:
+    @staticmethod
+    def create_spark_session(app_name: str = "Validator APP") -> SparkSession:
         """
         Crea una sesión de Spark y la devuelve.
 
@@ -104,16 +96,16 @@ class Validator:
             SparkSessionError: Si ocurre un error al crear la sesión de Spark.
         """
         try:
-            self.logger.info('Creating Spark Session')
+            print('Creating Spark Session')
             spark = SparkSession.builder \
                 .appName(app_name) \
                 .getOrCreate()
-            self.logger.info('Spark Session successfully created: ' + app_name)
+            print('Spark Session successfully created: ' + app_name)
         except Exception as e:
             spark_error_msg = 'Error occurred while creating Spark session: ' + \
                 str(e)
-            self.logger.exception(spark_error_msg)
-            self.logger.exception('Traceback: %s', traceback.format_exc())
+            print(spark_error_msg)
+            print('Traceback: %s', traceback.format_exc())
             raise SparkSessionError('Error with Spark Session: ' + str(e))
         return spark
 
@@ -126,13 +118,13 @@ class Validator:
         """
         if hasattr(self, 'spark') and self.spark is not None:
             try:
-                self.logger.info('Closing Spark Session')
+                print('Closing Spark Session')
                 self.spark.stop()
-                self.logger.info('Spark Session closed successfully')
+                print('Spark Session closed successfully')
             except Exception as e:
                 spark_error_msg = 'Error occurred while closing Spark session: ' + str(e)
-                self.logger.exception(spark_error_msg)
-                self.logger.exception('Traceback: %s', traceback.format_exc())
+                print(spark_error_msg)
+                print('Traceback: %s', traceback.format_exc())
                 raise SparkSessionError(spark_error_msg)
 
     def check_informed_fields(self, dataframe: DataFrame, column: str) -> DataFrame:
@@ -147,7 +139,7 @@ class Validator:
         Returns:
             dataframe (DataFrame): DataFrame con la columna añadida.
         """
-        self.logger.info(f"Validation for COMPLETENESS on: {column}")
+        print(f"Validation for COMPLETENESS on: {column}")
         dataframe = dataframe.withColumn(
             column + "_INFORMED",
             when(col(column).isNotNull(), 1).otherwise(0))
@@ -165,7 +157,7 @@ class Validator:
         Returns:
             df_unique_flag (DataFrame): DataFrame con la columna añadida.
         """
-        self.logger.info(f"Validation for UNIQUENESS on: {column}")
+        print(f"Validation for UNIQUENESS on: {column}")
         window_spec = Window().partitionBy(column)
         df_with_counts = dataframe.withColumn(
             "COUNT", count(column).over(window_spec))
@@ -201,17 +193,17 @@ class Validator:
             ref_pd = pd.read_excel(table_ref)
             ref_df = self.spark.createDataFrame(ref_pd)
         except FileNotFoundError as e:
-            self.logger.exception('File not found: ' + table_ref)
-            self.logger.exception(
+            print('File not found: ' + table_ref)
+            print(
                 'Error while searching for ' + table_ref + '. ' + str(e)
             )
-            self.logger.exception('Traceback: %s', traceback.format_exc())
+            print('Traceback: %s', traceback.format_exc())
             raise DataLoadingError('Data loading error: ' + str(e))
         except Exception as e:
-            self.logger.exception(
+            print(
                 'Error occurred while loading data: ' + str(e)
             )
-            self.logger.exception('Traceback: %s', traceback.format_exc())
+            print('Traceback: %s', traceback.format_exc())
             raise DataLoadingError('Data loading error: ' + str(e))
 
         flag_col_name = column+'_VALID'
@@ -271,7 +263,8 @@ class Validator:
         """
         pass
 
-    def get_null_count(self, dataframe: DataFrame, column: str) -> int:
+    @staticmethod
+    def get_null_count(dataframe: DataFrame, column: str) -> int:
         """
         Cuenta el número de valores nulos en una columna de un PySpark Dataframe.
 
@@ -284,7 +277,6 @@ class Validator:
         """
         null_count = dataframe.where(col(column).isNull()).count()
         return int(null_count)
-
 
     def get_null_percentage(self, dataframe: DataFrame, column: str) -> float:
         """
@@ -303,8 +295,8 @@ class Validator:
         null_percentage_rounded = round(null_percentage, 2)
         return float(null_percentage_rounded)
 
-
-    def get_informed_count(self, dataframe: DataFrame, column: str) -> int:
+    @staticmethod
+    def get_informed_count(dataframe: DataFrame, column: str) -> int:
         """
         Cuenta el número de campos informados (no nulos) en una columna del DataFrame.
 
@@ -337,7 +329,8 @@ class Validator:
         return float(informed_percentage_rounded)
 
 
-    def get_unique_count(self, dataframe: DataFrame, column: str) -> int:
+    @staticmethod
+    def get_unique_count(dataframe: DataFrame, column: str) -> int:
         """
         Cuenta el número de valores únicos en una columna del DataFrame.
 
@@ -350,7 +343,6 @@ class Validator:
         """
         unique_count = dataframe.select(column).distinct().count()
         return int(unique_count)
-
 
     def get_unique_percentage(self, dataframe: DataFrame, column: str) -> float:
         """
@@ -386,23 +378,23 @@ class Validator:
             Exception: Si ocurre un error al cargar los datos desde el archivo Excel.
         """
         try:
-            self.logger.info('Loading data from: ' + file_path)
+            print('Loading data from: ' + file_path)
             data_pd = pd.read_excel(file_path, sheet_name=sheet_name)
             data_df = self.spark.createDataFrame(data_pd)
-            self.logger.info('Data successfully read from: ' + file_path)
+            print('Data successfully read from: ' + file_path)
             return data_df
         except FileNotFoundError as e:
-            self.logger.exception('File not found: ' + file_path)
-            self.logger.exception(
+            print('File not found: ' + file_path)
+            print(
                 'Error while searching for ' + file_path + '. ' + str(e)
             )
-            self.logger.exception('Traceback: %s', traceback.format_exc())
+            print('Traceback: %s', traceback.format_exc())
             raise DataLoadingError('Data loading error: ' + str(e))
         except Exception as e:
-            self.logger.exception(
+            print(
                 'Error occurred while loading data: ' + str(e)
             )
-            self.logger.exception('Traceback: %s', traceback.format_exc())
+            print('Traceback: %s', traceback.format_exc())
             raise DataLoadingError('Data loading error: ' + str(e))
         
     def save_to_postgres(self,
@@ -432,13 +424,13 @@ class Validator:
                 mode=writing_mode,
                 properties=connection_properties
             )
-            self.logger.info(
+            print(
                 'Table correctly updated in the Database: ' + table_name)
         except Exception as e:
-            self.logger.exception(
+            print(
                 f'Error occurred while saving data in {table_name}: {str(e)}'
             )
-            self.logger.exception('Traceback: %s', traceback.format_exc())
+            print('Traceback: %s', traceback.format_exc())
             raise DataLoadingError('Data loading error: ' + str(e))
 
     def filter_df(self, df: DataFrame, column: str, value: str) -> DataFrame:
@@ -453,15 +445,12 @@ class Validator:
         Returns:
             DataFrame: Un nuevo DataFrame que contiene solo las filas donde la columna especificada tiene el valor dado.
         """
-        self.logger.info('Filtering data from ' + column + '=' + value)
+        print('Filtering data from ' + column + '=' + value)
 
         try:
-            # Intenta filtrar el DataFrame por el valor dado en la columna especificada
             df_filtered = df.filter(col(column) == value)
-
         except Exception as e:
-            # Captura cualquier excepción que ocurra durante el filtrado
-            self.logger.exception('Traceback: %s', traceback.format_exc())
-            raise DataFrameNotFoundError('Dataframe not found: ' + str(e))
+            print('Traceback: %s', traceback.format_exc())
+            raise DataFrameError('Error with DataFrame: ' + str(e))
 
         return df_filtered
