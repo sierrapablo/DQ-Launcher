@@ -11,5 +11,5 @@ There are no supported versions already.
 
 ## Reporting a Vulnerability
 
-Please contact me via GitHub
+Please contact via https://github.com/sierrapablo
 
