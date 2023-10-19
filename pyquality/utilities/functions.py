@@ -8,10 +8,12 @@ def close_spark_session(spark: SparkSession):
     Raises:
         SparkSessionError: Si ocurre un error al cerrar la sesión de Spark.
     """
-    if hasattr(spark, 'spark') and spark is not None:
+    if spark is not None:
         try:
             spark.stop()
         except Exception as e:
             spark_error_msg = 'Error occurred while closing Spark session: ' + \
                 str(e)
             raise SparkSessionError(spark_error_msg)
+    else:
+        raise SparkSessionError('No active Spark Session to close.')
