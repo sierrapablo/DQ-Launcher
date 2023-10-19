@@ -1,5 +1,5 @@
 """
-QualityValidations - v2.0
+PyQuality! v0.1
 
 Autor: Pablo Sierra Lorente
 Fecha: Octubre 2023
