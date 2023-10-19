@@ -14,18 +14,18 @@ You can initialize a PyQuality object as follows:
 validator = PyQuality(spark_session)
 
 ## Basic Validations
-    - Check for null values
-    - Check for unique values
-    - Validate data types
+- Check for null values
+- Check for unique values
+- Validate data types
 
 ## Advanced Validations
-    - Validate fields against a reference table
-    - Validate data length
-    - Standardize names
+- Validate fields against a reference table
+- Validate data length
+- Standardize names
 
 ## Statistics
-    - Count and get the percentage of null values
-    - Count and get the percentage of unique values
+- Count and get the percentage of null values
+- Count and get the percentage of unique values
 
 ## Contribution
 If you want to contribute to this project, please refer to: CONTRIBUTING.md
