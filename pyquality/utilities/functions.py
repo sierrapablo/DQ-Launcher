@@ -1,12 +1,26 @@
+"""
+Utility Functions
+
+Functions used in PyQuality! versoin 0.1
+
+close_spark_session: closes the provided Spark session if it is open.
+
+Author: Pablo Sierra Lorente
+Year: 2023
+"""
 from pyquality.utilities.errors import *
 from pyspark.sql import SparkSession
 
+
 def close_spark_session(spark: SparkSession):
     """
-    Cierra la sesión de Spark si está abierta.
+    Closes the Spark session if it is open.
+
+    Args:
+        spark (SparkSession): The SparkSession object to be closed.
 
     Raises:
-        SparkSessionError: Si ocurre un error al cerrar la sesión de Spark.
+        SparkSessionError: If an error occurs while closing the Spark session.
     """
     if spark is not None:
         try:

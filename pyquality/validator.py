@@ -19,11 +19,11 @@ class Validator:
 
     def __init__(self, spark: Optional[SparkSession] = None,):
         """
-        Constructor de la clase Validator.
+        Constructor of Validator.
 
         Args:
-            spark (Optional[SparkSession]): Objeto SparkSession utilizado para
-                interactuar con Spark. Si no se proporciona, se creará uno por defecto.
+            spark (Optional[SparkSession]): SparkSession object used for
+                interacting with Spark. If not provided, a default one will be created.
 
         Returns:
             None
@@ -38,7 +38,7 @@ class Validator:
                 raise SparkSessionError('Error with Spark Session: ' + str(e))
         else:
             self.spark = spark
-    
+
     def close(self):
         if hasattr(self, 'spark') and self.spark is not None:
             close_spark_session(self.spark)
@@ -48,15 +48,15 @@ class Validator:
     @staticmethod
     def check_informed_fields(dataframe: DataFrame, column: str) -> DataFrame:
         """
-        Verifica si cada campo de una columna está informado, y añade
-        una nueva columna con 1 cuando lo está, y 0 cuando no.
+        Checks if each field in a column is informed and adds
+        a new column with 1 when it is, and 0 when it is not.
 
         Args:
-            dataframe (DataFrame): DataFrame de PySpark.
-            column (str): Nombre de la columna que se va a validar.
+            dataframe (DataFrame): PySpark DataFrame.
+            column (str): Name of the column to validate.
 
         Returns:
-            dataframe (DataFrame): DataFrame con la columna añadida.
+            dataframe (DataFrame): DataFrame with the added column.
         """
         dataframe = dataframe.withColumn(
             column + '_INFORMED',
@@ -66,15 +66,15 @@ class Validator:
     @staticmethod
     def check_unique_fields(dataframe: DataFrame, column: str) -> DataFrame:
         """
-        Verifica si cada campo de una columna es único, y añade
-        una nueva columna con 1 cuando lo es, y 0 cuando no.
+        Checks if each field in a column is unique and adds
+        a new column with 1 when it is, and 0 when it is not.
 
         Args:
-            dataframe (DataFrame): DataFrame de PySpark.
-            column (str): Nombre de la columna que se va a validar.
+            dataframe (DataFrame): PySpark DataFrame.
+            column (str): Name of the column to validate.
 
         Returns:
-            df_unique_flag (DataFrame): DataFrame con la columna añadida.
+            df_unique_flag (DataFrame): DataFrame with the added column.
         """
         window_spec = Window().partitionBy(column)
         df_with_counts = dataframe.withColumn(
@@ -93,22 +93,22 @@ class Validator:
                              sheet_name: Optional[str] = None,
                              valid: Optional[bool] = True) -> DataFrame:
         """
-        Verifica si cada campo de una columna se encuentra en una tabla de referencia (DataFrame de PySpark).
-        Añade una nueva columna con 1 cuando coincide y 0 cuando no.
-        Modifica los valores existentes en la columna especificada del DataFrame original si valid es False.
+        Checks if each field in a column is in a reference table (PySpark DataFrame).
+        Adds a new column with 1 when it matches and 0 when it doesn't.
+        Modifies existing values in the specified column of the original DataFrame if valid is False.
 
         Args:
-            dataframe (DataFrame): DataFrame de PySpark.
-            column (str): Nombre de la columna que se va a validar o añadir.
-            table_ref (str): Ubicación del archivo de referencia (.xlsx o .csv).
-            field_ref (str): Nombre de la columna en la tabla de referencia.
-            sheet_name (Optional[str]): Nombre de la hoja en el archivo Excel
-                (opcional, por defecto selecciona la primera hoja).
-            valid (Optional[bool]): Indica si se debe añadir una nueva columna (True) o
-                modificar los valores de la existente (False).
+            dataframe (DataFrame): PySpark DataFrame.
+            column (str): Name of the column to validate or add.
+            table_ref (str): Location of the reference file (.xlsx or .csv).
+            field_ref (str): Name of the column in the reference table.
+            sheet_name (Optional[str]): Name of the sheet in the Excel file
+                (optional, defaults to the first sheet).
+            valid (Optional[bool]): Indicates whether to add a new column (True) or
+                modify the values of the existing one (False).
 
         Returns:
-            dataframe (DataFrame): DataFrame con la columna añadida o los valores modificados.
+            dataframe (DataFrame): DataFrame with the added column or modified values.
         """
         try:
             if table_ref.endswith('.xlsx'):
@@ -147,16 +147,16 @@ class Validator:
                           column: str,
                           data_length: int) -> DataFrame:
         """
-        Verifica si cada campo de una columna coincide con la longitud especificada.
-        Añade una columna con los valores: EQUAL si coincide, +-n si es más o menos largo.
+        Checks if each field in a column matches the specified length.
+        Adds a column with values: EQUAL if it matches, +-n if it is shorter or longer.
 
         Args:
-            dataframe (DataFrame): DataFrame de PySpark.
-            column (str): Nombre de la columna que se va a validar.
-            data_length (int): longitud del campo.
+            dataframe (DataFrame): PySpark DataFrame.
+            column (str): Name of the column to validate.
+            data_length (int): Length of the field.
 
         Returns:
-            dataframe (DataFrame): DataFrame con la columna añadida.
+            dataframe (DataFrame): DataFrame with the added column.
         """
         length_column = length(dataframe[column])
         dataframe = dataframe.withColumn(
@@ -169,15 +169,15 @@ class Validator:
 
     def check_data_type(self, dataframe: DataFrame, column: str, data_type: DataType) -> int:
         """
-        Verifica si la columna dada en el dataframe es de tipo especificado.
+        Checks if the given column in the dataframe is of the specified type.
 
         Args:
-            dataframe (DataFrame): El dataframe que contiene la columna.
-            column (str): Nombre de la columna que se verificará.
-            data_type (DataType): Tipo de datos específico que se espera en la columna.
+            dataframe (DataFrame): The dataframe containing the column.
+            column (str): Name of the column to be checked.
+            data_type (DataType): Specific data type expected in the column.
 
         Returns:
-            int: 1 si la columna es del tipo concreto, 0 si no lo es.
+            int: 1 if the column is of the specific type, 0 if it is not.
         """
         column_data_type = dataframe.schema[column].dataType
         if column_data_type == data_type:
@@ -190,17 +190,17 @@ class Validator:
                  column: str,
                  mode: Optional[str] = 'overwrite') -> DataFrame:
         """
-        Estandariza los campos de la columna especificada siguiendo reglas
-        de estandarización de nombres y apellidos. Maneja nombres y apellidos compuestos.
+        Standardizes fields in the specified column following
+        rules for standardization of names and surnames. Handles compound names and surnames.
 
         Args:
-            dataframe (DataFrame): El dataframe que contiene la columna.
-            column (str): Nombre de la columna que se estandarizará.
-            mode (str, optional): Modo de estandarización
-                                  ('overwrite' por defecto, admite 'add').
+            dataframe (DataFrame): The dataframe containing the column.
+            column (str): Name of the column to be standardized.
+            mode (str, optional): Standardization mode
+                                  ('overwrite' by default, also accepts 'add').
 
         Returns:
-            dataframe (DataFrame): DataFrame con la columna estandarizada.
+            dataframe (DataFrame): DataFrame with the standardized column.
         """
         if mode == 'add':
             dataframe = dataframe.withColumn(column + '_NO_STD', col(column))
@@ -213,28 +213,28 @@ class Validator:
     @staticmethod
     def get_null_count(dataframe: DataFrame, column: str) -> int:
         """
-        Cuenta el número de valores nulos en una columna de un PySpark Dataframe.
+        Counts the number of null values in a column of a PySpark DataFrame.
 
         Args:
-            dataframe (DataFrame): DataFrame de PySpark.
-            column (str): Nombre de la columna que se va a validar.
+            dataframe (DataFrame): PySpark DataFrame.
+            column (str): Name of the column to be validated.
 
         Returns:
-            null_count (int): Número de valores nulos en la columna.
+            null_count (int): Number of null values in the column.
         """
         null_count = dataframe.where(col(column).isNull()).count()
         return int(null_count)
 
     def get_null_percentage(self, dataframe: DataFrame, column: str) -> float:
         """
-        Calcula el porcentaje de valores nulos en una columnas del DataFrame.
+        Calculates the percentage of null values in a column of the DataFrame.
 
         Args:
-            dataframe (DataFrame): El DataFrame original.
-            column (str): Nombre de la columna que se va a validar.
+            dataframe (DataFrame): The original DataFrame.
+            column (str): Name of the column to be validated.
 
         Returns:
-            null_percentage_rounded (float): valor porcentual de nulos en la columna.
+            null_percentage_rounded (float): Percentage value of nulls in the column.
         """
         total_count = dataframe.count()
         null_count = self.get_null_count(dataframe, column)
@@ -245,28 +245,28 @@ class Validator:
     @staticmethod
     def get_informed_count(dataframe: DataFrame, column: str) -> int:
         """
-        Cuenta el número de campos informados (no nulos) en una columna del DataFrame.
+        Counts the number of informed fields (non-null) in a column of the DataFrame.
 
         Args:
-            dataframe (DataFrame): DataFrame de PySpark.
-            column (str): Nombre de la columna que se va a validar.
+            dataframe (DataFrame): PySpark DataFrame.
+            column (str): Name of the column to be validated.
 
         Returns:
-            informed_count (int): Número de campos informados en la columna.
+            informed_count (int): Number of informed fields in the column.
         """
         informed_count = dataframe.where(col(column).isNotNull()).count()
         return int(informed_count)
 
     def get_informed_percentage(self, dataframe: DataFrame, column: str) -> float:
         """
-        Calcula el porcentaje de campos informados en una columna del DataFrame.
+        Calculates the percentage of informed fields in a column of the DataFrame.
 
         Args:
-            dataframe (DataFrame): DataFrame de PySpark.
-            column (str): Nombre de la columna que se va a validar.
+            dataframe (DataFrame): PySpark DataFrame.
+            column (str): Name of the column to be validated.
 
         Returns:
-            informed_percentage_rounded (float): valor (%) de informados en la columna.
+            informed_percentage_rounded (float): Percentage value of informed fields in the column.
         """
         total_count = dataframe.count()
         informed_count = self.get_informed_count(dataframe, column)
@@ -277,28 +277,28 @@ class Validator:
     @staticmethod
     def get_unique_count(dataframe: DataFrame, column: str) -> int:
         """
-        Cuenta el número de valores únicos en una columna del DataFrame.
+        Counts the number of unique values in a column of the DataFrame.
 
         Args:
-            dataframe (DataFrame): DataFrame de PySpark.
-            column (str): Nombre de la columna que se va a validar.
+            dataframe (DataFrame): PySpark DataFrame.
+            column (str): Name of the column to be validated.
 
         Returns:
-            unique_count (int): Número de valores únicos en la columna.
+            unique_count (int): Number of unique values in the column.
         """
         unique_count = dataframe.select(column).distinct().count()
         return int(unique_count)
 
     def get_unique_percentage(self, dataframe: DataFrame, column: str) -> float:
         """
-        Calcula el porcentaje de valores únicos en una columna del DataFrame.
+        Calculates the percentage of unique values in a column of the DataFrame.
 
         Args:
-            dataframe (DataFrame): DataFrame de PySpark.
-            column (str): Nombre de la columna que se va a validar.
+            dataframe (DataFrame): PySpark DataFrame.
+            column (str): Name of the column to be validated.
 
         Returns:
-            unique_percentage_rounded (float): valor (%) de únicos en la columna.
+            unique_percentage_rounded (float): Percentage value of unique values in the column.
         """
         total_count = dataframe.count()
         unique_count = self.get_unique_count(dataframe, column)
@@ -308,16 +308,16 @@ class Validator:
 
     def filter_df(dataframe: DataFrame, column: str, value: str) -> DataFrame:
         """
-        Filtra un DataFrame en función de una columna y un valor específico.
+        Filters a DataFrame based on a specific column and value.
 
         Args:
-            df (DataFrame): El DataFrame de PySpark que se va a filtrar.
-            column (str): El nombre de la columna en la que se aplicará el filtro.
-            value (str): El valor que se utilizará para filtrar los datos en la columna.
+            dataframe (DataFrame): The PySpark DataFrame to be filtered.
+            column (str): The name of the column on which the filter will be applied.
+            value (str): The value that will be used to filter the data in the column.
 
         Returns:
-            DataFrame: Un nuevo DataFrame que contiene solo las filas donde la columna
-                especificada tiene el valor dado.
+            DataFrame: A new DataFrame containing only the rows where the specified column
+                has the given value.
         """
         try:
             df_filtered = dataframe.filter(col(column) == value)

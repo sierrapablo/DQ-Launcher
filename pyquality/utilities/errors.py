@@ -1,67 +1,73 @@
 """
-QualityValidation Errors
+Validation Errors
 
-Excepciones personalizadas utilizadas en QualityValidations.
+Custom exceptions used in PyQuality! version 0.1
 
-Clases:
-- DataLoadingError: Excepción para errores relacionados con la carga de datos.
-- ValidationError: Excepción para errores relacionados con validaciones de datos.
-- ConfigurationError: Excepción para errores relacionados con problemas de configuración.
-- DataFrameNotFoundError: Excepción para errores relacionados con problemas de  DataFrame.
+Classes:
+- DataLoadingError: Exception for errors related to data loading.
+- ValidationError: Exception for errors related to data validations.
+- ConfigurationError: Exception for errors related to configuration issues.
+- DataFrameNotFoundError: Exception for errors related to DataFrame problems.
+- DataFrameError: Exception for errors related to DataFrame issues.
+- SparkSessionError: Exception for errors related to Spark session problems.
+- UnsupportedError: Exception for errors related to unsupported versions or modes.
 
-Autor: Pablo Sierra Lorente
-Fecha: Octubre 2023
+Author: Pablo Sierra Lorente
+Year: 2023
 """
 
 
 class DataLoadingError(Exception):
     """
-    Excepción personalizada para errores relacionados con la carga de datos.
-    Esta excepción debería ser lanzada cuando ocurran problemas durante la carga de datos.
+    Custom exception for errors related to data loading.
+    This exception should be raised when problems occur during data loading.
     """
     pass
 
 
 class ValidationError(Exception):
     """
-    Excepción personalizada para errores relacionados con validaciones de datos.
-    Esta excepción debería ser lanzada cuando se detecten problemas durante las validaciones de datos.
+    Custom exception for errors related to data validations.
+    This exception should be raised when issues are detected during data validations.
     """
     pass
 
 
 class ConfigurationError(Exception):
     """
-    Excepción personalizada para errores relacionados con problemas de configuración.
-    Esta excepción debería ser lanzada cuando haya errores en la configuración del programa.
+    Custom exception for errors related to configuration problems.
+    This exception should be raised when there are errors in the program's configuration.
     """
     pass
 
 
 class DataFrameNotFoundError(Exception):
     """
-    Excepción personalizada para errores relacionados con problemas con los DataFrame.
-    Esta excepción debería ser lanzada cuando no se encuentre un DataFrame o este no sea válido.
+    Custom exception for errors related to DataFrame problems.
+    This exception should be raised when a DataFrame is not found or is not valid.
     """
     pass
+
 
 class DataFrameError(Exception):
     """
-    Excepción personalizada para errores relacionados con problemas con los DataFrame.
-    Esta excepción debería ser lanzada cuando haya un problema con el DataFrame.
+    Custom exception for errors related to DataFrame problems.
+    This exception should be raised when there is an issue with the DataFrame.
     """
     pass
+
 
 class SparkSessionError(Exception):
     """
-    Excepción personalizada para errores relacionados con problemas con la sesión de Spark.
-    Esta excepción debería ser lanzada cuando haya errores con el manejo de la sesión de Spark.
+    Custom exception for errors related to Spark session problems.
+    This exception should be raised when there are errors in managing the Spark session.
     """
     pass
 
+
 class UnsupportedError(Exception):
     """
-    Excepción personalizada para errores relacionados con modos y versiones no soportados.
-    Debería ser lanzada cuando aparezcan problemas con versiones y modos no soportados.
+    Custom exception for errors related to unsupported versions and modes.
+    This should be raised when problems with unsupported versions and modes occur.
     """
     pass
