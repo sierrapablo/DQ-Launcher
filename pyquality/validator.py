@@ -11,7 +11,7 @@ from pyspark.sql.window import Window
 import pandas as pd
 import traceback
 from typing import Optional
-from utilities.validation_errors import *
+from pyquality.utilities.validation_errors import *
 
 
 class Validator:
