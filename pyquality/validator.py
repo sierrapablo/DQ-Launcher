@@ -1,8 +1,8 @@
 """
-PyQuality! v0.1
+PyQuality! version 0.1
 
-Autor: Pablo Sierra Lorente
-Fecha: Octubre 2023
+Author: Pablo Sierra Lorente
+Year: 2023
 """
 
 from pyspark.sql import SparkSession, DataFrame
