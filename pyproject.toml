@@ -1,0 +1,29 @@
+[tool.poetry]
+name = "pyquality"
+version = "0.1"
+description = "Quality functions over PySpark DataFrames"
+authors = ["Pablo Sierra Lorente <pablosierralorente@outlook.es>"]
+license = "MIT"
+homepage = "https://github.com/sierrapablo/PyQuality"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+numpy = "1.26.1"
+pandas = "2.1.1"
+pyspark = "3.5.0"
+py4j = "0.10.9.7"
+python-dateutil = ">=2.8.2"
+pytz = ">=2023.3.post1"
+six = ">=1.16.0"
+tzdata = ">=2023.3"
