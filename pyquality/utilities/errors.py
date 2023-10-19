@@ -58,3 +58,10 @@ class SparkSessionError(Exception):
     Esta excepción debería ser lanzada cuando haya errores con el manejo de la sesión de Spark.
     """
     pass
+
+class UnsupportedError(Exception):
+    """
+    Excepción personalizada para errores relacionados con modos y versiones no soportados.
+    Debería ser lanzada cuando aparezcan problemas con versiones y modos no soportados.
+    """
+    pass
