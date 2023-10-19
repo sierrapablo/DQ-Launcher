@@ -6,8 +6,9 @@ Year: 2023
 """
 
 from pyspark.sql import SparkSession, DataFrame
-from pyspark.sql.functions import col, when, count, broadcast
+from pyspark.sql.functions import col, when, count, broadcast, length, regexp_replace, upper, trim
 from pyspark.sql.window import Window
+from pyspark.sql.types import DataType
 import pandas as pd
 from typing import Optional
 from pyquality.utilities.errors import *
@@ -137,7 +138,7 @@ class Validator:
     def check_data_length(self,
                           dataframe: DataFrame,
                           column: str,
-                          data_lenght: int) -> DataFrame:
+                          data_length: int) -> DataFrame:
         """
         Verifica si cada campo de una columna coincide con la longitud especificada.
         Añade una columna con los valores: EQUAL si coincide, +-n si es más o menos largo.
@@ -150,20 +151,32 @@ class Validator:
         Returns:
             dataframe (DataFrame): DataFrame con la columna añadida.
         """
-        pass
+        length_column = length(dataframe[column])
+        dataframe = dataframe.withColumn(
+            column + '_LENGTH_VALID',
+            when(length_column == data_length, 'EQUAL')
+            .when(length_column < data_length, '-' + str(data_length - length_column))
+            .otherwise('+' + str(length_column - data_length))
+        )
+        return dataframe
 
-    def check_data_type(self, dataframe: DataFrame, column: str, data_type: str) -> int:
+    def check_data_type(self, dataframe: DataFrame, column: str, data_type: DataType) -> int:
         """
         Verifica si la columna dada en el dataframe es de tipo especificado.
 
         Args:
             dataframe (DataFrame): El dataframe que contiene la columna.
-            columna (str): Nombre de la columna que se verificará.
+            column (str): Nombre de la columna que se verificará.
+            data_type (DataType): Tipo de datos específico que se espera en la columna.
 
         Returns:
             int: 1 si la columna es del tipo concreto, 0 si no lo es.
         """
-        pass
+        column_data_type = dataframe.schema[column].dataType
+        if column_data_type == data_type:
+            return 1
+        else:
+            return 0
 
     def std_name(self,
                  dataframe: DataFrame,
@@ -182,7 +195,13 @@ class Validator:
         Returns:
             dataframe (DataFrame): DataFrame con la columna estandarizada.
         """
-        pass
+        if mode == 'add':
+            dataframe = dataframe.withColumn(column + '_NO_STD', col(column))
+        standardized_dataframe = dataframe.withColumn(
+            column, upper(trim(regexp_replace(column, r'[^\w\s-]', ''))))
+        standardized_dataframe = standardized_dataframe.withColumn(
+            column, regexp_replace(column, r'-', ' '))
+        return standardized_dataframe
 
     @staticmethod
     def get_null_count(dataframe: DataFrame, column: str) -> int:
