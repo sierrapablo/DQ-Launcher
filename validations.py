@@ -13,9 +13,10 @@ from pyspark.sql.window import Window
 import pandas as pd
 import traceback
 from typing import Optional
-import os, logging, datetime
+import os
+import logging
+import datetime
 from validation_errors import *
-
 
 
 class Validator:
@@ -61,7 +62,7 @@ class Validator:
             print(error_message)
             print('Traceback: %s', traceback.format_exc())
             raise ConfigurationError(error_message)
-        
+
         log_filename = os.path.join(
             log_folder,
             f'log_{current_datetime.strftime("%Y-%m-%d_%H-%M-%S")}.log'
@@ -122,7 +123,8 @@ class Validator:
                 self.spark.stop()
                 print('Spark Session closed successfully')
             except Exception as e:
-                spark_error_msg = 'Error occurred while closing Spark session: ' + str(e)
+                spark_error_msg = 'Error occurred while closing Spark session: ' + \
+                    str(e)
                 print(spark_error_msg)
                 print('Traceback: %s', traceback.format_exc())
                 raise SparkSessionError(spark_error_msg)
@@ -216,7 +218,6 @@ class Validator:
 
         return dataframe
 
-    
     def check_data_length(self, dataframe: DataFrame, column: str, data_lenght: int) -> DataFrame:
         """
         Verifica si cada campo de una columna coincide con la longitud especificada.
@@ -310,7 +311,6 @@ class Validator:
         informed_count = dataframe.where(col(column).isNotNull()).count()
         return int(informed_count)
 
-
     def get_informed_percentage(self, dataframe: DataFrame, column: str) -> float:
         """
         Calcula el porcentaje de campos informados en una columna del DataFrame.
@@ -327,7 +327,6 @@ class Validator:
         informed_percentage = (informed_count / total_count) * 100.0
         informed_percentage_rounded = round(informed_percentage, 2)
         return float(informed_percentage_rounded)
-
 
     @staticmethod
     def get_unique_count(dataframe: DataFrame, column: str) -> int:
@@ -360,7 +359,7 @@ class Validator:
         unique_percentage = (unique_count / total_count) * 100.0
         informed_percentage_rounded = round(unique_percentage, 2)
         return float(informed_percentage_rounded)
-    
+
     def load_data_from_excel(self,
                              file_path: str,
                              sheet_name: str) -> DataFrame:
@@ -396,7 +395,7 @@ class Validator:
             )
             print('Traceback: %s', traceback.format_exc())
             raise DataLoadingError('Data loading error: ' + str(e))
-        
+
     def save_to_postgres(self,
                          df: DataFrame,
                          connection_url: str,
