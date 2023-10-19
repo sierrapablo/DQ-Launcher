@@ -6,16 +6,12 @@ Fecha: Octubre 2023
 """
 
 
-import logging
 from pyspark.sql import SparkSession, DataFrame
 from pyspark.sql.functions import col, when, count, lit
 from pyspark.sql.window import Window
 import pandas as pd
 import traceback
 from typing import Optional
-import os
-import logging
-import datetime
 from validation_errors import *
 
 
@@ -26,8 +22,8 @@ class Validator:
         Constructor de la clase Validator.
 
         Args:
-            spark (Optional[SparkSession]): Objeto SparkSession utilizado para interactuar con Spark.
-                Si no se proporciona, se creará uno por defecto.
+            spark (Optional[SparkSession]): Objeto SparkSession utilizado para
+                interactuar con Spark. Si no se proporciona, se creará uno por defecto.
 
         Returns:
             None
@@ -39,56 +35,12 @@ class Validator:
             self.spark = spark
 
     @staticmethod
-    def configure_logger(log_folder: Optional[str] = "logs") -> logging.Logger:
-        """
-        Configura y devuelve un objeto Logger.
-
-        Args:
-            log_folder (Optional[str]): Ruta del directorio donde se almacenarán los archivos de registro.
-                Por defecto, se utiliza "logs" como nombre del directorio.
-
-        Returns:
-            logging.Logger: Objeto Logger configurado para registrar mensajes en archivos de registro.
-
-        Raises:
-            ConfigurationError: Si ocurre un error al configurar el Logger, como problemas al crear el directorio de registros.
-        """
-        current_datetime = datetime.datetime.now()
-        try:
-            if not os.path.exists(log_folder):
-                os.makedirs(log_folder)
-        except Exception as e:
-            error_message = f'Error occurred while creating log directory: {str(e)}'
-            print(error_message)
-            print('Traceback: %s', traceback.format_exc())
-            raise ConfigurationError(error_message)
-
-        log_filename = os.path.join(
-            log_folder,
-            f'log_{current_datetime.strftime("%Y-%m-%d_%H-%M-%S")}.log'
-        )
-
-        logger = logging.getLogger('validations_logger')
-        logger.setLevel(logging.INFO)
-
-        formatter = logging.Formatter(
-            '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-        )
-
-        file_handler = logging.FileHandler(log_filename)
-        file_handler.setFormatter(formatter)
-
-        logger.addHandler(file_handler)
-
-        return logger
-
-    @staticmethod
     def create_spark_session(app_name: str = "Validator APP") -> SparkSession:
         """
         Crea una sesión de Spark y la devuelve.
 
         Args:
-            app_name (str): Nombre de la aplicación Spark. Por defecto, se utiliza "Validator APP".
+            app_name (str): Nombre de la aplicación Spark. Por defecto, "Validator APP".
 
         Returns:
             SparkSession: Objeto SparkSession creado y configurado para la aplicación.
@@ -175,15 +127,15 @@ class Validator:
                              table_ref: str,
                              field_ref: str) -> DataFrame:
         """
-        Verifica si cada campo de una columna se encuentra recogido en una tabla de referencia.
+        Verifica si cada campo de una columna se encuentra en una tabla de referencia.
         Añade una nueva columna con 1 cuando coincide, y 0 cuando no.
 
         Args:
             dataframe (DataFrame): DataFrame de PySpark.
             column (str): Nombre de la columna que se va a validar.
             table_ref (str): string de la ubicación de la tabla de referencia.
-                             Actualmente admite tablas en .xlsx
-            field_ref (str): nombre de la columna en la tabla de referencia que se va a comparar.
+                Actualmente admite tablas en .xlsx
+            field_ref (str): nombre de la columna en la tabla de referencia.
             spark (SparkSession): Sesión de Spark con la que se opera.
             logger (logging.Logger): Objeto de regstro tipo logger.
 
@@ -218,10 +170,13 @@ class Validator:
 
         return dataframe
 
-    def check_data_length(self, dataframe: DataFrame, column: str, data_lenght: int) -> DataFrame:
+    def check_data_length(self,
+                          dataframe: DataFrame,
+                          column: str,
+                          data_lenght: int) -> DataFrame:
         """
         Verifica si cada campo de una columna coincide con la longitud especificada.
-        Añade una columna con los valores: EQUAL si coincide, +-n según si es más o menos largo.
+        Añade una columna con los valores: EQUAL si coincide, +-n si es más o menos largo.
 
         Args:
             dataframe (DataFrame): DataFrame de PySpark.
@@ -249,7 +204,10 @@ class Validator:
         pass
 
     # Transformación y Estandarización de Datos
-    def std_name(self, dataframe: DataFrame, column: str, mode: Optional[str] = "overwrite") -> DataFrame:
+    def std_name(self,
+                 dataframe: DataFrame,
+                 column: str,
+                 mode: Optional[str] = "overwrite") -> DataFrame:
         """
         Estandariza los campos de la columna especificada siguiendo reglas
         de estandarización de nombres y apellidos. Maneja nombres y apellidos compuestos.
@@ -257,7 +215,8 @@ class Validator:
         Args:
             dataframe (DataFrame): El dataframe que contiene la columna.
             column (str): Nombre de la columna que se estandarizará.
-            mode (str, optional): Modo de estandarización ("overwrite" por defecto, admite "add").
+            mode (str, optional): Modo de estandarización
+                                  ("overwrite" por defecto, admite "add").
 
         Returns:
             dataframe (DataFrame): DataFrame con la columna estandarizada.
@@ -439,10 +398,11 @@ class Validator:
         Args:
             df (DataFrame): El DataFrame de PySpark que se va a filtrar.
             column (str): El nombre de la columna en la que se aplicará el filtro.
-            value (str): El valor que se utilizará para filtrar los datos en la columna especificada.
+            value (str): El valor que se utilizará para filtrar los datos en la columna.
 
         Returns:
-            DataFrame: Un nuevo DataFrame que contiene solo las filas donde la columna especificada tiene el valor dado.
+            DataFrame: Un nuevo DataFrame que contiene solo las filas donde la columna
+                especificada tiene el valor dado.
         """
         print('Filtering data from ' + column + '=' + value)
 
