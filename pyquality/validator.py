@@ -9,9 +9,8 @@ from pyspark.sql import SparkSession, DataFrame
 from pyspark.sql.functions import col, when, count, broadcast
 from pyspark.sql.window import Window
 import pandas as pd
-import traceback
 from typing import Optional
-from pyquality.utilities.validation_errors import *
+from pyquality.utilities.errors import *
 
 
 class Validator:
@@ -27,44 +26,19 @@ class Validator:
         Returns:
             None
         """
-
         if spark is None:
             app_name = 'Validator APP'
             try:
-                print('Creating Spark Session')
                 spark = SparkSession.builder \
                     .appName(app_name) \
                     .getOrCreate()
-                print('Spark Session successfully created: ' + app_name)
             except Exception as e:
-                spark_error_msg = 'Error occurred while creating Spark session: ' + \
-                    str(e)
-                print(spark_error_msg)
-                print('Traceback: %s', traceback.format_exc())
                 raise SparkSessionError('Error with Spark Session: ' + str(e))
         else:
             self.spark = spark
 
-    def close_spark_session(self):
-        """
-        Cierra la sesión de Spark si está abierta.
-
-        Raises:
-            SparkSessionError: Si ocurre un error al cerrar la sesión de Spark.
-        """
-        if hasattr(self, 'spark') and self.spark is not None:
-            try:
-                print('Closing Spark Session')
-                self.spark.stop()
-                print('Spark Session closed successfully')
-            except Exception as e:
-                spark_error_msg = 'Error occurred while closing Spark session: ' + \
-                    str(e)
-                print(spark_error_msg)
-                print('Traceback: %s', traceback.format_exc())
-                raise SparkSessionError(spark_error_msg)
-
-    def check_informed_fields(self, dataframe: DataFrame, column: str) -> DataFrame:
+    @staticmethod
+    def check_informed_fields(dataframe: DataFrame, column: str) -> DataFrame:
         """
         Verifica si cada campo de una columna está informado, y añade
         una nueva columna con 1 cuando lo está, y 0 cuando no.
@@ -76,13 +50,13 @@ class Validator:
         Returns:
             dataframe (DataFrame): DataFrame con la columna añadida.
         """
-        print(f'Validation for COMPLETENESS on: {column}')
         dataframe = dataframe.withColumn(
             column + '_INFORMED',
             when(col(column).isNotNull(), 1).otherwise(0))
         return dataframe
 
-    def check_unique_fields(self, dataframe: DataFrame, column: str) -> DataFrame:
+    @staticmethod
+    def check_unique_fields(dataframe: DataFrame, column: str) -> DataFrame:
         """
         Verifica si cada campo de una columna es único, y añade
         una nueva columna con 1 cuando lo es, y 0 cuando no.
@@ -94,7 +68,6 @@ class Validator:
         Returns:
             df_unique_flag (DataFrame): DataFrame con la columna añadida.
         """
-        print(f'Validation for UNIQUENESS on: {column}')
         window_spec = Window().partitionBy(column)
         df_with_counts = dataframe.withColumn(
             'COUNT', count(column).over(window_spec))
@@ -109,22 +82,25 @@ class Validator:
                              column: str,
                              table_ref: str,
                              field_ref: str,
-                             sheet_name: Optional[str] = None) -> DataFrame:
+                             sheet_name: Optional[str] = None,
+                             valid: Optional[bool] = True) -> DataFrame:
         """
-        Verifica si cada campo de una columna se encuentra en una tabla de referencia
-        (ya sea .xlsx o .csv).
-        Añade una nueva columna con 1 cuando coincide, y 0 cuando no.
+        Verifica si cada campo de una columna se encuentra en una tabla de referencia (DataFrame de PySpark).
+        Añade una nueva columna con 1 cuando coincide y 0 cuando no.
+        Modifica los valores existentes en la columna especificada del DataFrame original si valid es False.
 
         Args:
             dataframe (DataFrame): DataFrame de PySpark.
-            column (str): Nombre de la columna que se va a validar.
+            column (str): Nombre de la columna que se va a validar o añadir.
             table_ref (str): Ubicación del archivo de referencia (.xlsx o .csv).
             field_ref (str): Nombre de la columna en la tabla de referencia.
             sheet_name (Optional[str]): Nombre de la hoja en el archivo Excel
                 (opcional, por defecto selecciona la primera hoja).
+            valid (Optional[bool]): Indica si se debe añadir una nueva columna (True) o
+                modificar los valores de la existente (False).
 
         Returns:
-            dataframe (DataFrame): DataFrame con la columna añadida.
+            dataframe (DataFrame): DataFrame con la columna añadida o los valores modificados.
         """
         try:
             if table_ref.endswith('.xlsx'):
@@ -132,30 +108,30 @@ class Validator:
             elif table_ref.endswith('.csv'):
                 ref_pd = pd.read_csv(table_ref)
             else:
-                print('Error while loading reference table. Unsupported file format.')
-                raise ValueError('Unsupported file format.')
+                raise DataLoadingError('Unsupported file format.')
             ref_df = self.spark.createDataFrame(ref_pd)
         except FileNotFoundError as e:
-            print('File not found: ' + table_ref)
-            print('Error while searching for ' + table_ref + '. ' + str(e))
-            print('Traceback: %s', traceback.format_exc())
             raise DataLoadingError('Data loading error: ' + str(e))
         except Exception as e:
-            print('Error occurred while loading data: ' + str(e))
-            print('Traceback: %s', traceback.format_exc())
             raise DataLoadingError('Data loading error: ' + str(e))
+
+        join_type = 'left_outer' if valid else 'inner'
 
         joined_df = dataframe.join(
             broadcast(ref_df.select(field_ref)),
             col(column) == col(field_ref),
-            'left_outer'
+            join_type
         )
-
-        flag_col_name = column + '_VALID'
-        dataframe = joined_df.withColumn(
-            flag_col_name, when(col(field_ref).isNotNull(), 1).otherwise(0)
-        ).drop(field_ref)
-
+        if valid:
+            flag_col_name = column + '_VALID'
+            dataframe = joined_df.withColumn(
+                flag_col_name, when(col(field_ref).isNotNull(), 1).otherwise(0)
+            ).drop(field_ref)
+        else:
+            dataframe = joined_df.withColumn(
+                column, when(col(field_ref).isNotNull(),
+                             'NOT VALID').otherwise(col(column))
+            ).drop(field_ref)
         return dataframe
 
     def check_data_length(self,
@@ -174,7 +150,6 @@ class Validator:
         Returns:
             dataframe (DataFrame): DataFrame con la columna añadida.
         """
-
         pass
 
     def check_data_type(self, dataframe: DataFrame, column: str, data_type: str) -> int:
@@ -188,10 +163,8 @@ class Validator:
         Returns:
             int: 1 si la columna es del tipo concreto, 0 si no lo es.
         """
-
         pass
 
-    # Transformación y Estandarización de Datos
     def std_name(self,
                  dataframe: DataFrame,
                  column: str,
@@ -307,79 +280,7 @@ class Validator:
         informed_percentage_rounded = round(unique_percentage, 2)
         return float(informed_percentage_rounded)
 
-    def load_data_from_excel(self,
-                             file_path: str,
-                             sheet_name: str) -> DataFrame:
-        """
-        Carga datos desde un archivo Excel a un DataFrame de Spark.
-
-        Args:
-            file_path (str): Ruta del archivo Excel.
-            sheet_name (str): Nombre de la hoja en el archivo Excel.
-
-        Returns:
-            DataFrame: DataFrame de Spark que contiene los datos del archivo Excel.
-
-        Raises:
-            Exception: Si ocurre un error al cargar los datos desde el archivo Excel.
-        """
-        try:
-            print('Loading data from: ' + file_path)
-            data_pd = pd.read_excel(file_path, sheet_name=sheet_name)
-            data_df = self.spark.createDataFrame(data_pd)
-            print('Data successfully read from: ' + file_path)
-            return data_df
-        except FileNotFoundError as e:
-            print('File not found: ' + file_path)
-            print(
-                'Error while searching for ' + file_path + '. ' + str(e)
-            )
-            print('Traceback: %s', traceback.format_exc())
-            raise DataLoadingError('Data loading error: ' + str(e))
-        except Exception as e:
-            print(
-                'Error occurred while loading data: ' + str(e)
-            )
-            print('Traceback: %s', traceback.format_exc())
-            raise DataLoadingError('Data loading error: ' + str(e))
-
-    def save_to_postgres(self,
-                         df: DataFrame,
-                         connection_url: str,
-                         table_name: str,
-                         connection_properties: dict,
-                         writing_mode: str):
-        """
-        Guarda un DataFrame de Spark en una tabla PostgreSQL con una conexión JDBC.
-
-        Args:
-            results_df (DataFrame): DataFrame de Spark que se va a guardar en la BD.
-            connection_url (str): URL de conexión a la base de datos PostgreSQL.
-            table_name (str): Nombre de la tabla en la que se van a guardar los datos.
-            connection_properties (dict): Propiedades de la conexión a la BD PostgreSQL.
-            writing_mode (str): Modo de escritura para la tabla:
-                ('overwrite', 'append', 'ignore', 'error').
-
-        Raises:
-            Exception: Si ocurre un error al guardar los datos en la BD PostgreSQL.
-        """
-        try:
-            df.write.jdbc(
-                url=connection_url,
-                table=table_name,
-                mode=writing_mode,
-                properties=connection_properties
-            )
-            print(
-                'Table correctly updated in the Database: ' + table_name)
-        except Exception as e:
-            print(
-                f'Error occurred while saving data in {table_name}: {str(e)}'
-            )
-            print('Traceback: %s', traceback.format_exc())
-            raise DataLoadingError('Data loading error: ' + str(e))
-
-    def filter_df(self, df: DataFrame, column: str, value: str) -> DataFrame:
+    def filter_df(dataframe: DataFrame, column: str, value: str) -> DataFrame:
         """
         Filtra un DataFrame en función de una columna y un valor específico.
 
@@ -392,12 +293,8 @@ class Validator:
             DataFrame: Un nuevo DataFrame que contiene solo las filas donde la columna
                 especificada tiene el valor dado.
         """
-        print('Filtering data from ' + column + '=' + value)
-
         try:
-            df_filtered = df.filter(col(column) == value)
+            df_filtered = dataframe.filter(col(column) == value)
         except Exception as e:
-            print('Traceback: %s', traceback.format_exc())
             raise DataFrameError('Error with DataFrame: ' + str(e))
-
         return df_filtered
