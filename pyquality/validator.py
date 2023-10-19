@@ -12,6 +12,7 @@ from pyspark.sql.types import DataType
 import pandas as pd
 from typing import Optional
 from pyquality.utilities.errors import *
+from pyquality.utilities.functions import close_spark_session
 
 
 class Validator:
@@ -37,6 +38,12 @@ class Validator:
                 raise SparkSessionError('Error with Spark Session: ' + str(e))
         else:
             self.spark = spark
+    
+    def close(self):
+        if hasattr(self, 'spark') and self.spark is not None:
+            close_spark_session(self.spark)
+        else:
+            raise SparkSessionError('No active Spark Session to close.')
 
     @staticmethod
     def check_informed_fields(dataframe: DataFrame, column: str) -> DataFrame:
