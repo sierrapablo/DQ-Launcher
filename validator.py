@@ -5,9 +5,8 @@ Autor: Pablo Sierra Lorente
 Fecha: Octubre 2023
 """
 
-
 from pyspark.sql import SparkSession, DataFrame
-from pyspark.sql.functions import col, when, count, lit
+from pyspark.sql.functions import col, when, count, broadcast
 from pyspark.sql.window import Window
 import pandas as pd
 import traceback
@@ -30,37 +29,21 @@ class Validator:
         """
 
         if spark is None:
-            spark = self.create_spark_session()
+            app_name = 'Validator APP'
+            try:
+                print('Creating Spark Session')
+                spark = SparkSession.builder \
+                    .appName(app_name) \
+                    .getOrCreate()
+                print('Spark Session successfully created: ' + app_name)
+            except Exception as e:
+                spark_error_msg = 'Error occurred while creating Spark session: ' + \
+                    str(e)
+                print(spark_error_msg)
+                print('Traceback: %s', traceback.format_exc())
+                raise SparkSessionError('Error with Spark Session: ' + str(e))
         else:
             self.spark = spark
-
-    @staticmethod
-    def create_spark_session(app_name: str = "Validator APP") -> SparkSession:
-        """
-        Crea una sesión de Spark y la devuelve.
-
-        Args:
-            app_name (str): Nombre de la aplicación Spark. Por defecto, "Validator APP".
-
-        Returns:
-            SparkSession: Objeto SparkSession creado y configurado para la aplicación.
-
-        Raises:
-            SparkSessionError: Si ocurre un error al crear la sesión de Spark.
-        """
-        try:
-            print('Creating Spark Session')
-            spark = SparkSession.builder \
-                .appName(app_name) \
-                .getOrCreate()
-            print('Spark Session successfully created: ' + app_name)
-        except Exception as e:
-            spark_error_msg = 'Error occurred while creating Spark session: ' + \
-                str(e)
-            print(spark_error_msg)
-            print('Traceback: %s', traceback.format_exc())
-            raise SparkSessionError('Error with Spark Session: ' + str(e))
-        return spark
 
     def close_spark_session(self):
         """
@@ -93,9 +76,9 @@ class Validator:
         Returns:
             dataframe (DataFrame): DataFrame con la columna añadida.
         """
-        print(f"Validation for COMPLETENESS on: {column}")
+        print(f'Validation for COMPLETENESS on: {column}')
         dataframe = dataframe.withColumn(
-            column + "_INFORMED",
+            column + '_INFORMED',
             when(col(column).isNotNull(), 1).otherwise(0))
         return dataframe
 
@@ -111,62 +94,67 @@ class Validator:
         Returns:
             df_unique_flag (DataFrame): DataFrame con la columna añadida.
         """
-        print(f"Validation for UNIQUENESS on: {column}")
+        print(f'Validation for UNIQUENESS on: {column}')
         window_spec = Window().partitionBy(column)
         df_with_counts = dataframe.withColumn(
-            "COUNT", count(column).over(window_spec))
+            'COUNT', count(column).over(window_spec))
         df_unique_flag = df_with_counts.withColumn(
-            column+'_UNIQUE',
-            when(col("COUNT") == 1, 1).otherwise(0)
-        ).drop("COUNT")
+            column + '_UNIQUE',
+            when(col('COUNT') == 1, 1).otherwise(0)
+        ).drop('COUNT')
         return df_unique_flag
 
     def check_field_validity(self,
                              dataframe: DataFrame,
                              column: str,
                              table_ref: str,
-                             field_ref: str) -> DataFrame:
+                             field_ref: str,
+                             sheet_name: Optional[str] = None) -> DataFrame:
         """
-        Verifica si cada campo de una columna se encuentra en una tabla de referencia.
+        Verifica si cada campo de una columna se encuentra en una tabla de referencia
+        (ya sea .xlsx o .csv).
         Añade una nueva columna con 1 cuando coincide, y 0 cuando no.
 
         Args:
             dataframe (DataFrame): DataFrame de PySpark.
             column (str): Nombre de la columna que se va a validar.
-            table_ref (str): string de la ubicación de la tabla de referencia.
-                Actualmente admite tablas en .xlsx
-            field_ref (str): nombre de la columna en la tabla de referencia.
-            spark (SparkSession): Sesión de Spark con la que se opera.
-            logger (logging.Logger): Objeto de regstro tipo logger.
+            table_ref (str): Ubicación del archivo de referencia (.xlsx o .csv).
+            field_ref (str): Nombre de la columna en la tabla de referencia.
+            sheet_name (Optional[str]): Nombre de la hoja en el archivo Excel
+                (opcional, por defecto selecciona la primera hoja).
 
         Returns:
             dataframe (DataFrame): DataFrame con la columna añadida.
-
         """
         try:
-            ref_pd = pd.read_excel(table_ref)
+            if table_ref.endswith('.xlsx'):
+                ref_pd = pd.read_excel(table_ref, sheet_name=sheet_name)
+            elif table_ref.endswith('.csv'):
+                ref_pd = pd.read_csv(table_ref)
+            else:
+                print('Error while loading reference table. Unsupported file format.')
+                raise ValueError('Unsupported file format.')
             ref_df = self.spark.createDataFrame(ref_pd)
         except FileNotFoundError as e:
             print('File not found: ' + table_ref)
-            print(
-                'Error while searching for ' + table_ref + '. ' + str(e)
-            )
+            print('Error while searching for ' + table_ref + '. ' + str(e))
             print('Traceback: %s', traceback.format_exc())
             raise DataLoadingError('Data loading error: ' + str(e))
         except Exception as e:
-            print(
-                'Error occurred while loading data: ' + str(e)
-            )
+            print('Error occurred while loading data: ' + str(e))
             print('Traceback: %s', traceback.format_exc())
             raise DataLoadingError('Data loading error: ' + str(e))
 
-        flag_col_name = column+'_VALID'
-        dataframe = dataframe.withColumn(flag_col_name, lit(0))
-        for row in dataframe.rdd.collect():
-            column_value = row[column]
-            if ref_df.filter(col(field_ref) == column_value).count() > 0:
-                dataframe = dataframe.withColumn(flag_col_name, when(
-                    col(column) == column_value, 1).otherwise(col(flag_col_name)))
+        joined_df = dataframe.join(
+            broadcast(ref_df.select(field_ref)),
+            col(column) == col(field_ref),
+            'left_outer'
+        )
+
+        flag_col_name = column + '_VALID'
+        dataframe = joined_df.withColumn(
+            flag_col_name, when(col(field_ref).isNotNull(), 1).otherwise(0)
+        ).drop(field_ref)
 
         return dataframe
 
@@ -207,7 +195,7 @@ class Validator:
     def std_name(self,
                  dataframe: DataFrame,
                  column: str,
-                 mode: Optional[str] = "overwrite") -> DataFrame:
+                 mode: Optional[str] = 'overwrite') -> DataFrame:
         """
         Estandariza los campos de la columna especificada siguiendo reglas
         de estandarización de nombres y apellidos. Maneja nombres y apellidos compuestos.
@@ -216,7 +204,7 @@ class Validator:
             dataframe (DataFrame): El dataframe que contiene la columna.
             column (str): Nombre de la columna que se estandarizará.
             mode (str, optional): Modo de estandarización
-                                  ("overwrite" por defecto, admite "add").
+                                  ('overwrite' por defecto, admite 'add').
 
         Returns:
             dataframe (DataFrame): DataFrame con la columna estandarizada.
@@ -370,7 +358,7 @@ class Validator:
             table_name (str): Nombre de la tabla en la que se van a guardar los datos.
             connection_properties (dict): Propiedades de la conexión a la BD PostgreSQL.
             writing_mode (str): Modo de escritura para la tabla:
-                ("overwrite", "append", "ignore", "error").
+                ('overwrite', 'append', 'ignore', 'error').
 
         Raises:
             Exception: Si ocurre un error al guardar los datos en la BD PostgreSQL.
