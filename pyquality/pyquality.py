@@ -29,7 +29,7 @@ class PyQuality:
             None
         """
         if spark is None:
-            app_name = 'Validator APP'
+            app_name = 'PyQuality! Spark APP'
             try:
                 spark = SparkSession.builder \
                     .appName(app_name) \
