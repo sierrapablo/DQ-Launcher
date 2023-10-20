@@ -31,7 +31,7 @@ class Validator:
         if spark is None:
             app_name = 'PyQuality! Spark APP'
             try:
-                spark = SparkSession.builder \
+                self.spark = SparkSession.builder \
                     .appName(app_name) \
                     .getOrCreate()
             except Exception as e:
