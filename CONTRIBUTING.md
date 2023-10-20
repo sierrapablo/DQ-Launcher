@@ -1,6 +1,6 @@
-# Contributing to PyQuality!
+# Contributing to DQ! Validator
 
-Thank you for considering contributing to PyQuality! We are delighted to receive contributions from the community.
+Thank you for considering contributing to DQValidator! We are delighted to receive contributions from the community.
 
 Before contributing, please make sure to read and follow our contribution guidelines to make the process smooth and effective.
 
@@ -29,6 +29,6 @@ Before contributing, please make sure to read and follow our contribution guidel
 
 ## Reporting Issues
 
-If you find any issues with PyQuality, please create an issue in the [issue repository](https://github.com/sierrapablo/pyquality/issues) and provide details about the problem, including how to reproduce it if possible.
+If you find any issues with DQValidator, please create an issue in the [issue repository](https://github.com/sierrapablo/pyquality/issues) and provide details about the problem, including how to reproduce it if possible.
 
-Thank you for contributing to PyQuality! Your help is greatly appreciated.
+Thank you for contributing to DQValidator! Your help is greatly appreciated.

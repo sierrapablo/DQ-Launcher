@@ -3,7 +3,7 @@ from pyspark.testing import assertDataFrameEqual
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col
 from pyspark.sql.types import IntegerType
-from pyquality.pyquality import Validator
+from dqvalidator.dqvalidator import Validator
 
 
 class CheckDataLengthTest(unittest.TestCase):
