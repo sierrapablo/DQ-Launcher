@@ -88,9 +88,8 @@ class Validator:
     def check_field_validity(self,
                              dataframe: DataFrame,
                              column: str,
-                             table_ref: str,
+                             ref_df: DataFrame,
                              field_ref: str,
-                             sheet_name: Optional[str] = None,
                              valid: Optional[bool] = True) -> DataFrame:
         """
         Checks if each field in a column is in a reference table (PySpark DataFrame).
@@ -100,31 +99,15 @@ class Validator:
         Args:
             dataframe (DataFrame): PySpark DataFrame.
             column (str): Name of the column to validate or add.
-            table_ref (str): Location of the reference file (.xlsx or .csv).
+            table_ref (DataFrame): DataFrame for the reference table.
             field_ref (str): Name of the column in the reference table.
-            sheet_name (Optional[str]): Name of the sheet in the Excel file
-                (optional, defaults to the first sheet).
             valid (Optional[bool]): Indicates whether to add a new column (True) or
                 modify the values of the existing one (False).
 
         Returns:
             dataframe (DataFrame): DataFrame with the added column or modified values.
         """
-        try:
-            if table_ref.endswith('.xlsx'):
-                ref_pd = pandas.read_excel(table_ref, sheet_name=sheet_name)
-            elif table_ref.endswith('.csv'):
-                ref_pd = pandas.read_csv(table_ref)
-            else:
-                raise DataLoadingError('Unsupported file format.')
-            ref_df = self.spark.createDataFrame(ref_pd)
-        except FileNotFoundError as e:
-            raise DataLoadingError('Data loading error: ' + str(e))
-        except Exception as e:
-            raise DataLoadingError('Data loading error: ' + str(e))
-
-        join_type = 'left_outer' if valid else 'inner'
-
+        join_type = 'left'
         joined_df = dataframe.join(
             broadcast(ref_df.select(field_ref)),
             col(column) == col(field_ref),
