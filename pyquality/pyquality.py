@@ -148,7 +148,7 @@ class Validator:
                           data_length: int) -> DataFrame:
         """
         Checks if each field in a column matches the specified length.
-        Adds a column with values: EQUAL if it matches, +-n if it is shorter or longer.
+        Adds a column with 1 if the length matches, and 0 otherwise.
 
         Args:
             dataframe (DataFrame): PySpark DataFrame.
@@ -158,12 +158,11 @@ class Validator:
         Returns:
             dataframe (DataFrame): DataFrame with the added column.
         """
-        length_column = length(dataframe[column])
+        length_column = expr(f'length({column})')
+        match_length = when(length_column == data_length, 1).otherwise(0)
         dataframe = dataframe.withColumn(
             column + '_LENGTH_VALID',
-            when(length_column == data_length, 'EQUAL')
-            .when(length_column < data_length, '-' + str(data_length - length_column))
-            .otherwise('+' + str(length_column - data_length))
+            match_length.cast('int')
         )
         return dataframe
 
