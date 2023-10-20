@@ -15,7 +15,7 @@ from pyspark.sql.window import Window
 from typing import Optional
 
 
-class PyQuality:
+class Validator:
 
     def __init__(self, spark: Optional[SparkSession] = None,):
         """
