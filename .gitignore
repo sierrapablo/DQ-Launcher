@@ -2,3 +2,6 @@
 env/
 .vscode/
 dist/
+pyquality/__pycache__/
+pyquality/utilities/__pycache__/
+tests/__pycache__/
