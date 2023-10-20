@@ -5,7 +5,6 @@ Author: Pablo Sierra Lorente
 Year: 2023
 """
 
-import pandas
 from dqvalidator.utilities.errors import *
 from dqvalidator.utilities.functions import *
 from pyspark.sql import SparkSession, DataFrame
