@@ -1,6 +1,6 @@
 import unittest
 from pyspark.sql import SparkSession
-from pyquality.pyquality import Validator
+from dqvalidator.dqvalidator import Validator
 
 
 class TestCheckCompletenessUniquenessVd(unittest.TestCase):

@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import MagicMock
-from pyquality.pyquality import Validator
-from pyquality.utilities.errors import SparkSessionError
+from dqvalidator.dqvalidator import Validator
+from dqvalidator.utilities.errors import SparkSessionError
 
 
 class TestConstructorPyQuality(unittest.TestCase):
