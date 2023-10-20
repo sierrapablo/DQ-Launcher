@@ -4,4 +4,4 @@ env/
 dist/
 pyquality/__pycache__/
 pyquality/utilities/__pycache__/
-tests/__pycache__/
+pyquality/tests/__pycache__/
