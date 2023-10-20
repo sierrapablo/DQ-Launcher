@@ -1,10 +1,5 @@
-<<<<<<< HEAD
 # PyQuality! - Version 0.2
 PyQuality is a Python library that provides functions for performing data quality validations on Spark DataFrames. This library can help you ensure the integrity, consistency, and accuracy of your data before conducting analysis or training models with it.
-=======
-# DQ! Validator - Version 0.1
-DQValidator is a Python library that provides functions for performing data quality validations on Spark DataFrames. This library can help you ensure the integrity, consistency, and accuracy of your data before conducting analysis or training models with it.
->>>>>>> main
 
 ## Installation
 You can install DQValidator using 'pip':
