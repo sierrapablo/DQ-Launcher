@@ -1,9 +1,6 @@
 .gitignore
 env/
 .vscode/
-<<<<<<< HEAD
-dist/
-=======
 dist/
 pyquality/__pycache__/
 pyquality/utilities/__pycache__/

@@ -29,11 +29,7 @@ class Validator:
             None
         """
         if spark is None:
-<<<<<<< HEAD
-            app_name = 'PyQuality Spark APP'
-=======
             app_name = 'PyQuality! Spark APP'
->>>>>>> version-0.1
             try:
                 self.spark = SparkSession.builder \
                     .appName(app_name) \
