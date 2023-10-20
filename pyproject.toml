@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "pyquality"
+name = "dqvalidator"
 version = "0.1"
 description = "Quality functions over PySpark DataFrames"
 authors = ["Pablo Sierra Lorente <pablosierralorente@outlook.es>"]
