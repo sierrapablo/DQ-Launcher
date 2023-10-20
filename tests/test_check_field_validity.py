@@ -22,11 +22,11 @@ class CheckFieldValidityTest(unittest.TestCase):
         ref_data = [('xyz',), ('ghi',), ('abc',)]
         ref_columns = ['column_ref']
         ref_df = self.spark.createDataFrame(ref_data, schema=ref_columns)
-        ref_df.write.csv('ref_check_field_validity.csv',
+        ref_df.write.csv('tests\\ref_check_field_validity.csv',
                          header=True, mode='overwrite')
 
         result_df = self.validator_test.check_field_validity(
-            df, 'column1', 'ref_check_field_validity.csv', 'column_ref', valid=True)
+            df, 'column1', 'tests\\ref_check_field_validity.csv', 'column_ref', valid=True)
 
         expected_data = [(1,), (0,), (1,), (0,)]
         expected_columns = ['column1_VALID']
@@ -44,11 +44,11 @@ class CheckFieldValidityTest(unittest.TestCase):
         ref_data = [('xyz',), ('ghi',), ('abc',)]
         ref_columns = ['column_ref']
         ref_df = self.spark.createDataFrame(ref_data, schema=ref_columns)
-        ref_df.write.csv('ref_check_field_validity.csv',
+        ref_df.write.csv('tests\\ref_check_field_validity.csv',
                          header=True, mode='overwrite')
 
         result_df = self.validator_test.check_field_validity(
-            df, 'column1', 'ref_check_field_validity.csv', 'column_ref', valid=False)
+            df, 'column1', 'tests\\ref_check_field_validity.csv', 'column_ref', valid=False)
 
         expected_data = [('abc',), ('NOT VALID',), ('ghi',), ('NOT VALID',)]
         expected_columns = ['column1']
@@ -66,11 +66,11 @@ class CheckFieldValidityTest(unittest.TestCase):
         ref_data = [('xyz',), ('ghi',), ('abc',)]
         ref_columns = ['column_ref']
         ref_df = self.spark.createDataFrame(ref_data, schema=ref_columns)
-        ref_df.write.csv('ref_check_field_validity.csv',
+        ref_df.write.csv('tests\\ref_check_field_validity.csv',
                          header=True, mode='overwrite')
 
         result_df = self.validator_test.check_field_validity(
-            df, 'column1', 'ref_check_field_validity.csv', 'column_ref')
+            df, 'column1', 'tests\\ref_check_field_validity.csv', 'column_ref')
 
         expected_data = [(1,), (0,), (1,), (0,)]
         expected_columns = ['column1_VALID']
