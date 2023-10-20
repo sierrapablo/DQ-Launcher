@@ -1,5 +1,6 @@
 import unittest
 from pyspark.sql import SparkSession
+from pyspark.sql.types import StructType, StructField, LongType, StringType, IntegerType
 from dqvalidator.dqvalidator import Validator
 
 
@@ -13,7 +14,7 @@ class CheckFieldValidityTest(unittest.TestCase):
     def tearDown(self):
         self.spark.stop()
 
-    def test_check_field_validity_valid_defined(self):
+    def test_check_field_validity_valid_true(self):
 
         input_data = [('abc',), ('def',), ('ghi',), ('jkl',)]
         columns = ['column1']
@@ -22,40 +23,38 @@ class CheckFieldValidityTest(unittest.TestCase):
         ref_data = [('xyz',), ('ghi',), ('abc',)]
         ref_columns = ['column_ref']
         ref_df = self.spark.createDataFrame(ref_data, schema=ref_columns)
-        ref_df.write.csv('tests\\ref_check_field_validity.csv',
-                         header=True, mode='overwrite')
 
-        result_df = self.validator_test.check_field_validity(
-            df, 'column1', 'tests\\ref_check_field_validity.csv', 'column_ref', valid=True)
+        result_df = self.validator_test.check_field_validity(dataframe=df,
+                                                             column='column1',
+                                                             ref_df=ref_df,
+                                                             field_ref='column_ref',
+                                                             valid=True)
 
-        expected_data = [(1,), (0,), (1,), (0,)]
-        expected_columns = ['column1_VALID']
-        expected_df = self.spark.createDataFrame(
-            expected_data, schema=expected_columns)
+        result_data = result_df.collect()
+        expected_data = [('abc', 1), ('def', 0), ('ghi', 1), ('jkl', 0)]
 
-        self.assertDataFrameEqual(result_df, expected_df)
+        self.assertEqual(result_data, expected_data)
 
-    def test_check_field_validity_unvalid_defined(self):
+    def test_check_field_validity_valid_false(self):
 
         input_data = [('abc',), ('def',), ('ghi',), ('jkl',)]
-        columns = ['column1']
-        df = self.spark.createDataFrame(input_data, schema=columns)
+        schema = StructType([StructField('column1', StringType(), True)])
+        df = self.spark.createDataFrame(input_data, schema=schema)
 
         ref_data = [('xyz',), ('ghi',), ('abc',)]
         ref_columns = ['column_ref']
         ref_df = self.spark.createDataFrame(ref_data, schema=ref_columns)
-        ref_df.write.csv('tests\\ref_check_field_validity.csv',
-                         header=True, mode='overwrite')
 
-        result_df = self.validator_test.check_field_validity(
-            df, 'column1', 'tests\\ref_check_field_validity.csv', 'column_ref', valid=False)
+        result_df = self.validator_test.check_field_validity(dataframe=df,
+                                                             column='column1',
+                                                             ref_df=ref_df,
+                                                             field_ref='column_ref',
+                                                             valid=False)
 
-        expected_data = [('abc',), ('NOT VALID',), ('ghi',), ('NOT VALID',)]
-        expected_columns = ['column1']
-        expected_df = self.spark.createDataFrame(
-            expected_data, schema=expected_columns)
+        result_data = [row.column1 for row in result_df.collect()]
+        expected_data = ['NOT VALID', 'def', 'NOT VALID', 'jkl']
 
-        self.assertDataFrameEqual(result_df, expected_df)
+        self.assertEqual(result_data, expected_data)
 
     def test_check_field_validity_valid_undefined(self):
 
@@ -66,18 +65,16 @@ class CheckFieldValidityTest(unittest.TestCase):
         ref_data = [('xyz',), ('ghi',), ('abc',)]
         ref_columns = ['column_ref']
         ref_df = self.spark.createDataFrame(ref_data, schema=ref_columns)
-        ref_df.write.csv('tests\\ref_check_field_validity.csv',
-                         header=True, mode='overwrite')
 
-        result_df = self.validator_test.check_field_validity(
-            df, 'column1', 'tests\\ref_check_field_validity.csv', 'column_ref')
+        result_df = self.validator_test.check_field_validity(dataframe=df,
+                                                             column='column1',
+                                                             ref_df=ref_df,
+                                                             field_ref='column_ref')
 
-        expected_data = [(1,), (0,), (1,), (0,)]
-        expected_columns = ['column1_VALID']
-        expected_df = self.spark.createDataFrame(
-            expected_data, schema=expected_columns)
+        result_data = result_df.collect()
+        expected_data = [('abc', 1), ('def', 0), ('ghi', 1), ('jkl', 0)]
 
-        self.assertDataFrameEqual(result_df, expected_df)
+        self.assertEqual(result_data, expected_data)
 
 
 if __name__ == "__main__":
