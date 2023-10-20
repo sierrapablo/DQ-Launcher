@@ -8,7 +8,7 @@ close_spark_session: closes the provided Spark session if it is open.
 Author: Pablo Sierra Lorente
 Year: 2023
 """
-from pyquality.utilities.errors import *
+from dqvalidator.utilities.errors import *
 from pyspark.sql import SparkSession
 
 

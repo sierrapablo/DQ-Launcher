@@ -1,13 +1,13 @@
 """
-PyQuality! version 0.1
+DQ! Validator version 0.1
 
 Author: Pablo Sierra Lorente
 Year: 2023
 """
 
 import pandas
-from pyquality.utilities.errors import *
-from pyquality.utilities.functions import *
+from dqvalidator.utilities.errors import *
+from dqvalidator.utilities.functions import *
 from pyspark.sql import SparkSession, DataFrame
 from pyspark.sql.functions import *
 from pyspark.sql.types import DataType
@@ -29,7 +29,7 @@ class Validator:
             None
         """
         if spark is None:
-            app_name = 'PyQuality! Spark APP'
+            app_name = 'DQ! Validator Spark APP'
             try:
                 self.spark = SparkSession.builder \
                     .appName(app_name) \
