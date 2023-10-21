@@ -312,7 +312,7 @@ class Validator:
         informed_percentage_rounded = round(unique_percentage, 2)
         return float(informed_percentage_rounded)
 
-    def filter_df(self, column: str, value: str) -> DataFrame:
+    def filter_vd(self, column: str, value: str) -> DataFrame:
         """
         Filters a DataFrame based on a specific column and value.
 
