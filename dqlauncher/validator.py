@@ -1,13 +1,15 @@
 """
-DQ! Validator version 0.1
+DQLauncher version 1.0
+
+Validator
 
 Author: Pablo Sierra Lorente
 Year: 2023
 """
 
-from dqvalidator.utilities.errors import *
-from dqvalidator.utilities.functions import *
-from pyspark.sql import SparkSession, DataFrame
+from dqlauncher.utilities.errors import *
+from dqlauncher.utilities.functions import *
+from pyspark.sql import DataFrame
 from pyspark.sql.functions import *
 from pyspark.sql.types import DataType
 from pyspark.sql.window import Window
@@ -16,139 +18,139 @@ from typing import Optional
 
 class Validator:
 
-    def __init__(self, spark: Optional[SparkSession] = None,):
-        """
-        Constructor of Validator.
+    def __init__(self, df: DataFrame):
+        super().__init__(df._jdf, df.sql_ctx)
 
-        Args:
-            spark (Optional[SparkSession]): SparkSession object used for
-                interacting with Spark. If not provided, a default one will be created.
-
-        Returns:
-            None
-        """
-        if spark is None:
-            app_name = 'DQ! Validator Spark APP'
-            try:
-                self.spark = SparkSession.builder \
-                    .appName(app_name) \
-                    .getOrCreate()
-            except Exception as e:
-                raise SparkSessionError('Error with Spark Session: ' + str(e))
-        else:
-            self.spark = spark
-
-    def close(self):
-        if hasattr(self, 'spark') and self.spark is not None:
-            close_spark_session(self.spark)
-        else:
-            raise SparkSessionError('No active Spark Session to close.')
-
-    @staticmethod
-    def check_informed_fields(dataframe: DataFrame, column: str) -> DataFrame:
+    def check_informed_fields(self,
+                              column: str,
+                              result_column: Optional[str] = None) -> "Validator":
         """
         Checks if each field in a column is informed and adds
         a new column with 1 when it is, and 0 when it is not.
 
         Args:
-            dataframe (DataFrame): PySpark DataFrame.
-            column (str): Name of the column to validate.
+            column (str): Name of the column to validate.result_column (Optional[str]): name of the resulted column.
+                If not provided, default column + '_INFORMED'
 
         Returns:
-            dataframe (DataFrame): DataFrame with the added column.
+            validator (Validator): Validator with the added column.
         """
-        dataframe = dataframe.withColumn(
-            column + '_INFORMED',
+        if result_column is None:
+            result_column = column + '_INFORMED'
+        if column not in self.columns:
+            raise ValidatorError(
+                f"Column '{column}' not found in the Validator.")
+        validator = self.withColumn(
+            result_column,
             when(col(column).isNotNull(), 1).otherwise(0))
-        return dataframe
+        return validator
 
-    @staticmethod
-    def check_unique_fields(dataframe: DataFrame, column: str) -> DataFrame:
+    def check_unique_fields(self,
+                            column: str,
+                            result_column: Optional[str] = None) -> "Validator":
         """
         Checks if each field in a column is unique and adds
         a new column with 1 when it is, and 0 when it is not.
 
         Args:
-            dataframe (DataFrame): PySpark DataFrame.
             column (str): Name of the column to validate.
+            result_column (Optional[str]): name of the resulted column.
+                If not provided, default column + '_UNIQUE'
 
         Returns:
-            df_unique_flag (DataFrame): DataFrame with the added column.
+            vd_unique_flag (Validator): Validator with the added column.
         """
+        if result_column is None:
+            result_column = column + '_UNIQUE'
+        if column not in self.columns:
+            raise ValidatorError(
+                f"Column '{column}' not found in the Validator.")
         window_spec = Window().partitionBy(column)
-        df_with_counts = dataframe.withColumn(
+        vd_with_counts = self.withColumn(
             'COUNT', count(column).over(window_spec))
-        df_unique_flag = df_with_counts.withColumn(
-            column + '_UNIQUE',
+        vd_unique_flag = vd_with_counts.withColumn(
+            result_column,
             when(col('COUNT') == 1, 1).otherwise(0)
         ).drop('COUNT')
-        return df_unique_flag
+        return vd_unique_flag
 
     def check_field_validity(self,
-                             dataframe: DataFrame,
                              column: str,
-                             ref_df: DataFrame,
+                             ref_df: "Validator",
                              field_ref: str,
-                             valid: Optional[bool] = True) -> DataFrame:
+                             valid: Optional[bool] = True,
+                             result_column: Optional[str] = None) -> "Validator":
         """
-        Checks if each field in a column is in a reference table (PySpark DataFrame).
+        Checks if each field in a column is in a reference table (Validator).
         Adds a new column with 1 when it matches and 0 when it doesn't.
-        Modifies existing values in the specified column of the original DataFrame if valid is False.
+        Modifies existing values in the specified column of the original Validator if valid is False.
 
         Args:
-            dataframe (DataFrame): PySpark DataFrame.
             column (str): Name of the column to validate or add.
-            table_ref (DataFrame): DataFrame for the reference table.
+            table_ref (Validator): Validator for the reference table.
             field_ref (str): Name of the column in the reference table.
             valid (Optional[bool]): Indicates whether to add a new column (True) or
                 modify the values of the existing one (False).
+            result_column (Optional[str]): name of the resulted column.
+                If not provided, default column + '_VALID'
 
         Returns:
-            dataframe (DataFrame): DataFrame with the added column or modified values.
+            validator (Validator): Validator with the added column or modified values.
         """
+        if column not in self.columns:
+            raise ValidatorError(
+                f"Column '{column}' not found in the Validator.")
         join_type = 'left'
-        joined_df = dataframe.join(
+        joined_vd = self.join(
             broadcast(ref_df.select(field_ref)),
             col(column) == col(field_ref),
             join_type
         )
         if valid:
-            flag_col_name = column + '_VALID'
-            dataframe = joined_df.withColumn(
-                flag_col_name, when(col(field_ref).isNotNull(), 1).otherwise(0)
+            if result_column is None:
+                result_column = column + '_VALID'
+            validator = joined_vd.withColumn(
+                result_column, when(col(field_ref).isNotNull(), 1).otherwise(0)
             ).drop(field_ref)
         else:
-            dataframe = joined_df.withColumn(
-                column, when(col(field_ref).isNotNull(),
-                             'NOT VALID').otherwise(col(column))
+            validator = joined_vd.withColumn(
+                column,
+                when(col(field_ref).isNotNull(),
+                     'NOT VALID').otherwise(col(column))
             ).drop(field_ref)
-        return dataframe
+        return validator
 
     def check_data_length(self,
-                          dataframe: DataFrame,
                           column: str,
-                          data_length: int) -> DataFrame:
+                          data_length: int,
+                          result_column: Optional[str] = None) -> "Validator":
         """
         Checks if each field in a column matches the specified length.
         Adds a column with 1 if the length matches, and 0 otherwise.
 
         Args:
-            dataframe (DataFrame): PySpark DataFrame.
             column (str): Name of the column to validate.
             data_length (int): Length of the field.
 
         Returns:
-            dataframe (DataFrame): DataFrame with the added column.
+            validator (Validator): Validator with the added column.
         """
+        if result_column is None:
+            result_column = column + '_LENGHT_CHECKED'
+        if column not in self.columns:
+            raise ValidatorError(
+                f"Column '{column}' not found in the Validator.")
         length_column = expr(f'length({column})')
         match_length = when(length_column == data_length, 1).otherwise(0)
-        dataframe = dataframe.withColumn(
-            column + '_LENGTH_VALID',
+        validator = self.withColumn(
+            result_column,
             match_length.cast('int')
         )
-        return dataframe
+        return validator
 
-    def check_data_type(self, dataframe: DataFrame, column: str, data_type: DataType) -> int:
+    def check_data_type(self,
+                        column: str,
+                        data_type: DataType) -> int:
         """
         Checks if the given column in the dataframe is of the specified type.
 
@@ -160,14 +162,16 @@ class Validator:
         Returns:
             int: 1 if the column is of the specific type, 0 if it is not.
         """
-        column_data_type = dataframe.schema[column].dataType
+        if column not in self.columns:
+            raise ValidatorError(
+                f"Column '{column}' not found in the Validator.")
+        column_data_type = self.schema[column].dataType
         if column_data_type == data_type:
             return 1
         else:
             return 0
 
     def std_name(self,
-                 dataframe: DataFrame,
                  column: str,
                  mode: Optional[str] = 'overwrite') -> DataFrame:
         """
@@ -183,16 +187,18 @@ class Validator:
         Returns:
             dataframe (DataFrame): DataFrame with the standardized column.
         """
+        if column not in self.columns:
+            raise ValidatorError(
+                f"Column '{column}' not found in the Validator.")
         if mode == 'add':
-            dataframe = dataframe.withColumn(column + '_NO_STD', col(column))
-        standardized_dataframe = dataframe.withColumn(
+            validator = self.withColumn(column + '_NO_STD', col(column))
+        standardized_vd = validator.withColumn(
             column, upper(trim(regexp_replace(column, r'[^\w\s-]', ''))))
-        standardized_dataframe = standardized_dataframe.withColumn(
+        standardized_vd = standardized_vd.withColumn(
             column, regexp_replace(column, r'-', ' '))
-        return standardized_dataframe
+        return standardized_vd
 
-    @staticmethod
-    def get_null_count(dataframe: DataFrame, column: str) -> int:
+    def get_null_count(self, column: str) -> int:
         """
         Counts the number of null values in a column of a PySpark DataFrame.
 
@@ -203,10 +209,12 @@ class Validator:
         Returns:
             null_count (int): Number of null values in the column.
         """
-        null_count = dataframe.where(col(column).isNull()).count()
+        if column not in self.columns:
+            raise ValueError(f"Column '{column}' not found in the Validator.")
+        null_count = self.where(col(column).isNull()).count()
         return int(null_count)
 
-    def get_null_percentage(self, dataframe: DataFrame, column: str) -> float:
+    def get_null_percentage(self, column: str) -> float:
         """
         Calculates the percentage of null values in a column of the DataFrame.
 
@@ -217,14 +225,15 @@ class Validator:
         Returns:
             null_percentage_rounded (float): Percentage value of nulls in the column.
         """
-        total_count = dataframe.count()
-        null_count = self.get_null_count(dataframe, column)
+        if column not in self.columns:
+            raise ValueError(f"Column '{column}' not found in the Validator.")
+        total_count = self.count()
+        null_count = self.get_null_count(column)
         null_percentage = (null_count / total_count) * 100.0
         null_percentage_rounded = round(null_percentage, 2)
         return float(null_percentage_rounded)
 
-    @staticmethod
-    def get_informed_count(dataframe: DataFrame, column: str) -> int:
+    def get_informed_count(self, column: str) -> int:
         """
         Counts the number of informed fields (non-null) in a column of the DataFrame.
 
@@ -235,10 +244,13 @@ class Validator:
         Returns:
             informed_count (int): Number of informed fields in the column.
         """
-        informed_count = dataframe.where(col(column).isNotNull()).count()
+        if column not in self.columns:
+            raise ValidatorError(
+                f"Column '{column}' not found in the Validator.")
+        informed_count = self.where(col(column).isNotNull()).count()
         return int(informed_count)
 
-    def get_informed_percentage(self, dataframe: DataFrame, column: str) -> float:
+    def get_informed_percentage(self, column: str) -> float:
         """
         Calculates the percentage of informed fields in a column of the DataFrame.
 
@@ -249,14 +261,16 @@ class Validator:
         Returns:
             informed_percentage_rounded (float): Percentage value of informed fields in the column.
         """
-        total_count = dataframe.count()
-        informed_count = self.get_informed_count(dataframe, column)
+        if column not in self.columns:
+            raise ValidatorError(
+                f"Column '{column}' not found in the Validator.")
+        total_count = self.count()
+        informed_count = self.get_informed_count(column)
         informed_percentage = (informed_count / total_count) * 100.0
         informed_percentage_rounded = round(informed_percentage, 2)
         return float(informed_percentage_rounded)
 
-    @staticmethod
-    def get_unique_count(dataframe: DataFrame, column: str) -> int:
+    def get_unique_count(self, column: str) -> int:
         """
         Counts the number of unique values in a column of the DataFrame.
 
@@ -267,10 +281,13 @@ class Validator:
         Returns:
             unique_count (int): Number of unique values in the column.
         """
-        unique_count = dataframe.select(column).distinct().count()
+        if column not in self.columns:
+            raise ValidatorError(
+                f"Column '{column}' not found in the Validator.")
+        unique_count = self.select(column).distinct().count()
         return int(unique_count)
 
-    def get_unique_percentage(self, dataframe: DataFrame, column: str) -> float:
+    def get_unique_percentage(self, column: str) -> float:
         """
         Calculates the percentage of unique values in a column of the DataFrame.
 
@@ -281,13 +298,16 @@ class Validator:
         Returns:
             unique_percentage_rounded (float): Percentage value of unique values in the column.
         """
-        total_count = dataframe.count()
-        unique_count = self.get_unique_count(dataframe, column)
+        if column not in self.columns:
+            raise ValidatorError(
+                f"Column '{column}' not found in the Validator.")
+        total_count = self.count()
+        unique_count = self.get_unique_count(column)
         unique_percentage = (unique_count / total_count) * 100.0
         informed_percentage_rounded = round(unique_percentage, 2)
         return float(informed_percentage_rounded)
 
-    def filter_df(dataframe: DataFrame, column: str, value: str) -> DataFrame:
+    def filter_df(self, column: str, value: str) -> DataFrame:
         """
         Filters a DataFrame based on a specific column and value.
 
@@ -301,7 +321,10 @@ class Validator:
                 has the given value.
         """
         try:
-            df_filtered = dataframe.filter(col(column) == value)
+            if column not in self.columns:
+                raise ValidatorError(
+                    f"Column '{column}' not found in the Validator.")
+            df_filtered = self.filter(col(column) == value)
         except Exception as e:
-            raise DataFrameError('Error with DataFrame: ' + str(e))
+            raise ValidatorError('Error with Validator: ' + str(e))
         return df_filtered

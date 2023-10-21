@@ -1,14 +1,15 @@
 """
-Validation Errors
 
-Custom exceptions used in PyQuality! version 0.1
+DQLauncher version 1.0
+
+Custom exceptions used in DQLauncher version 0.1
 
 Classes:
 - DataLoadingError: Exception for errors related to data loading.
 - ValidationError: Exception for errors related to data validations.
 - ConfigurationError: Exception for errors related to configuration issues.
-- DataFrameNotFoundError: Exception for errors related to DataFrame problems.
-- DataFrameError: Exception for errors related to DataFrame issues.
+- ValidatorNotFoundError: Exception for errors related to Validator problems.
+- ValidatorError: Exception for errors related to Validator issues.
 - SparkSessionError: Exception for errors related to Spark session problems.
 - UnsupportedError: Exception for errors related to unsupported versions or modes.
 
@@ -41,18 +42,18 @@ class ConfigurationError(Exception):
     pass
 
 
-class DataFrameNotFoundError(Exception):
+class ValidatorNotFoundError(Exception):
     """
-    Custom exception for errors related to DataFrame problems.
-    This exception should be raised when a DataFrame is not found or is not valid.
+    Custom exception for errors related to Validator problems.
+    This exception should be raised when a Validator is not found or is not valid.
     """
     pass
 
 
-class DataFrameError(Exception):
+class ValidatorError(Exception):
     """
-    Custom exception for errors related to DataFrame problems.
-    This exception should be raised when there is an issue with the DataFrame.
+    Custom exception for errors related to Validator problems.
+    This exception should be raised when there is an issue with the Validator.
     """
     pass
 
