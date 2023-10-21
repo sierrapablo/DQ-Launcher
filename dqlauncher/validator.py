@@ -63,17 +63,21 @@ class Validator:
         """
         if result_column is None:
             result_column = column + '_UNIQUE'
-        if column not in self.columns:
-            raise ValidatorError(
-                f"Column '{column}' not found in the Validator.")
-        window_spec = Window().partitionBy(column)
-        vd_with_counts = self.withColumn(
-            'COUNT', count(column).over(window_spec))
-        vd_unique_flag = vd_with_counts.withColumn(
-            result_column,
-            when(col('COUNT') == 1, 1).otherwise(0)
-        ).drop('COUNT')
-        return vd_unique_flag
+        try:
+            window_spec = Window().partitionBy(column)
+            vd_with_counts = self.df.withColumn(
+                'COUNT', count(column).over(window_spec))
+            df_unique_flag = vd_with_counts.withColumn(
+                result_column,
+                when(
+                    (col(column).isNotNull()) & (col('COUNT') == 1), 1
+                ).otherwise(0)
+            ).drop('COUNT')
+            vd_unique_flag = Validator(df_unique_flag)
+            return vd_unique_flag
+        except Exception as e:
+            error_msg = f"Column '{column}' not found. Columns present: {self.df.columns}"
+            raise ValidationError(error_msg) from e
 
     def check_field_validity(self,
                              column: str,
