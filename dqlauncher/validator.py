@@ -26,7 +26,7 @@ class Validator:
                               result_column: Optional[str] = None) -> "Validator":
         """
         Checks if each field in a column is informed and adds
-        a new column with 1 when it is, and 0 when it is not.
+        a new column with 1 when it is, and 0 when if it is not.
 
         Args:
             column (str): Name of the column to validate.result_column (Optional[str]): name of the resulted column.
