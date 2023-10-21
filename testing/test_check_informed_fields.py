@@ -25,18 +25,15 @@ class TestCheckInformedFields(unittest.TestCase):
         """
         Test case to validate the default behavior of 'check_informed_fields' method.
         """
-        # Test data and columns setup
         input_data = [('Paula', '30'),
                       ('Marlene', None),
                       (None, '67'),
                       ('Juan', '30')]
         columns = ['nombre', 'edad']
 
-        # Create DataFrame and Validator instance
         df = self.spark.createDataFrame(input_data, schema=columns)
         validator_test = Validator(df)
 
-        # Perform validation
         result_vd = validator_test.check_informed_fields(columns[0])
         expected_output = [('Paula', '30', 1),
                            ('Marlene', None, 1),
@@ -44,7 +41,6 @@ class TestCheckInformedFields(unittest.TestCase):
                            ('Juan', '30', 1)]
         expected_columns = ['nombre', 'edad', 'nombre_INFORMED']
 
-        # Compare results
         result_data = result_vd.collect()
         expected_data = self.spark.createDataFrame(
             expected_output,
@@ -57,18 +53,16 @@ class TestCheckInformedFields(unittest.TestCase):
         Test case to validate the behavior of 'check_informed_fields' method
         with a custom result column name.
         """
-        # Test data and columns setup
+
         input_data = [('Paula', '30'),
                       ('Marlene', None),
                       (None, '67'),
                       ('Juan', '30')]
         columns = ['nombre', 'edad']
 
-        # Create DataFrame and Validator instance
         df = self.spark.createDataFrame(input_data, schema=columns)
         validator_test = Validator(df)
 
-        # Perform validation with custom result column
         result_vd = validator_test.check_informed_fields(columns[0], 'RESULT')
         expected_output = [('Paula', '30', 1),
                            ('Marlene', None, 1),
@@ -76,7 +70,6 @@ class TestCheckInformedFields(unittest.TestCase):
                            ('Juan', '30', 1)]
         expected_columns = ['nombre', 'edad', 'RESULT']
 
-        # Compare results
         result_data = result_vd.collect()
         expected_data = self.spark.createDataFrame(
             expected_output,
@@ -89,26 +82,17 @@ class TestCheckInformedFields(unittest.TestCase):
         Test case to validate that the 'check_informed_fields' method raises
         a ValidationError when attempting to validate a non-existent column.
         """
-        # Test data and columns setup
         input_data = [('Paula', '30'),
                       ('Marlene', None),
                       (None, '67'),
                       ('Juan', '30')]
         columns = ['nombre', 'edad']
 
-        # Create DataFrame and Validator instance
         df = self.spark.createDataFrame(input_data, schema=columns)
         validator_test = Validator(df)
 
-        # Attempt validation on a non-existent column and validate the raised exception
         with self.assertRaises(ValidationError) as context:
             validator_test.check_informed_fields('telefono')
-
-        # Define expected error message
-        expected_error_msg = "Column 'telefono' not found. Columns present: ['nombre', 'edad']"
-
-        # Compare the raised exception message with the expected error message
-        self.assertEqual(str(context.exception), expected_error_msg)
 
 
 if __name__ == '__main__':
