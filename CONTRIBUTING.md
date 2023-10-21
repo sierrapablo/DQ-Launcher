@@ -1,6 +1,6 @@
-# Contributing to DQ! Validator
+# Contributing to DQ Launcher
 
-Thank you for considering contributing to DQValidator! We are delighted to receive contributions from the community.
+Thank you for considering contributing to DQ Launcher! We are delighted to receive contributions from the community.
 
 Before contributing, please make sure to read and follow our contribution guidelines to make the process smooth and effective.
 
@@ -8,7 +8,7 @@ Before contributing, please make sure to read and follow our contribution guidel
 
 1. **Fork the Repository**: Make a fork of this repository on GitHub.
 
-2. **Clone Your Forked Repository**: Clone the fork to your local machine using the command `git clone https://github.com/sierrapablo/pyquality.git`.
+2. **Clone Your Forked Repository**: Clone the fork to your local machine using the command `git clone https://github.com/sierrapablo/DQ-Launcher.git`.
 
 3. **Create a Branch**: Create a new branch to work on your feature or bug fix. You can do this using `git checkout -b your-branch-name`.
 
@@ -29,6 +29,6 @@ Before contributing, please make sure to read and follow our contribution guidel
 
 ## Reporting Issues
 
-If you find any issues with DQValidator, please create an issue in the [issue repository](https://github.com/sierrapablo/pyquality/issues) and provide details about the problem, including how to reproduce it if possible.
+If you find any issues with DQValidator, please create an issue in the [issue repository](https://github.com/sierrapablo/DQ-Launcher/issues) and provide details about the problem, including how to reproduce it if possible.
 
-Thank you for contributing to DQValidator! Your help is greatly appreciated.
+Thank you for contributing to DQ Launcher! Your help is greatly appreciated.

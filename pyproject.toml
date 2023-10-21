@@ -1,10 +1,10 @@
 [tool.poetry]
-name = "dqvalidator"
+name = "dqlauncher"
 version = "0.1"
-description = "Quality functions over PySpark DataFrames"
+description = "DataQuality functions over PySpark DataFrames"
 authors = ["Pablo Sierra Lorente <pablosierralorente@outlook.es>"]
 license = "MIT"
-homepage = "https://github.com/sierrapablo/PyQuality"
+homepage = "https://github.com/sierrapablo/DQ-Launcher"
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
