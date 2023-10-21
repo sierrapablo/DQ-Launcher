@@ -19,7 +19,7 @@ from typing import Optional
 class Validator:
 
     def __init__(self, df: DataFrame):
-        super().__init__(df._jdf, df.sql_ctx)
+        self.df = df
 
     def check_informed_fields(self,
                               column: str,
@@ -37,10 +37,10 @@ class Validator:
         """
         if result_column is None:
             result_column = column + '_INFORMED'
-        if column not in self.columns:
-            raise ValidatorError(
-                f"Column '{column}' not found in the Validator.")
-        validator = self.withColumn(
+        if column not in self.df.columns:
+            raise ValidationError(
+                f"Column '{column}' not found. Columns present: {self.df.columns}")
+        validator = self.df.withColumn(
             result_column,
             when(col(column).isNotNull(), 1).otherwise(0))
         return validator
