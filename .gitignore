@@ -2,7 +2,6 @@
 env/
 .vscode/
 dist/
-dqvalidator/__pycache__/
-dqvalidator/utilities/__pycache__/
-tests/__pycache__/
-tests/ref_check_field_validity.csv/
+dqlauncher/__pycache__/
+dqlauncher/utilities/__pycache__/
+testing/__pycache__/
