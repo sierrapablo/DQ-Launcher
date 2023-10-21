@@ -13,7 +13,7 @@ from pyspark.sql import DataFrame
 from pyspark.sql.functions import *
 from pyspark.sql.types import DataType
 from pyspark.sql.window import Window
-from typing import Optional
+from typing import Optional, Union
 
 
 class Validator:
@@ -38,9 +38,10 @@ class Validator:
         if result_column is None:
             result_column = column + '_INFORMED'
         try:
-            validator = self.df.withColumn(
+            dataframe = self.df.withColumn(
                 result_column,
                 when(col(column).isNotNull(), 1).otherwise(0))
+            validator = Validator(dataframe)
             return validator
         except Exception as e:
             error_msg = f"Column '{column}' not found. Columns present: {self.df.columns}"
@@ -59,7 +60,7 @@ class Validator:
                 If not provided, default column + '_UNIQUE'
 
         Returns:
-            vd_unique_flag (Validator): Validator with the added column.
+            validator (Validator): Validator with the added column.
         """
         if result_column is None:
             result_column = column + '_UNIQUE'
@@ -73,26 +74,26 @@ class Validator:
                     (col(column).isNotNull()) & (col('COUNT') == 1), 1
                 ).otherwise(0)
             ).drop('COUNT')
-            vd_unique_flag = Validator(df_unique_flag)
-            return vd_unique_flag
+            validator = Validator(df_unique_flag)
+            return validator
         except Exception as e:
             error_msg = f"Column '{column}' not found. Columns present: {self.df.columns}"
             raise ValidationError(error_msg) from e
 
     def check_field_validity(self,
                              column: str,
-                             ref_df: "Validator",
+                             ref_df: Union["Validator", "DataFrame"],
                              field_ref: str,
                              valid: Optional[bool] = True,
                              result_column: Optional[str] = None) -> "Validator":
         """
-        Checks if each field in a column is in a reference table (Validator).
+        Checks if each field in a column is in a reference table (Validator or DataFrame).
         Adds a new column with 1 when it matches and 0 when it doesn't.
         Modifies existing values in the specified column of the original Validator if valid is False.
 
         Args:
             column (str): Name of the column to validate or add.
-            table_ref (Validator): Validator for the reference table.
+            ref_df (Union[Validator, DataFrame]): Validator or DataFrame for the reference table.
             field_ref (str): Name of the column in the reference table.
             valid (Optional[bool]): Indicates whether to add a new column (True) or
                 modify the values of the existing one (False).
@@ -102,28 +103,32 @@ class Validator:
         Returns:
             validator (Validator): Validator with the added column or modified values.
         """
-        if column not in self.columns:
-            raise ValidatorError(
-                f"Column '{column}' not found in the Validator.")
-        join_type = 'left'
-        joined_vd = self.join(
-            broadcast(ref_df.select(field_ref)),
-            col(column) == col(field_ref),
-            join_type
-        )
-        if valid:
-            if result_column is None:
-                result_column = column + '_VALID'
-            validator = joined_vd.withColumn(
-                result_column, when(col(field_ref).isNotNull(), 1).otherwise(0)
-            ).drop(field_ref)
-        else:
-            validator = joined_vd.withColumn(
-                column,
-                when(col(field_ref).isNotNull(),
-                     'NOT VALID').otherwise(col(column))
-            ).drop(field_ref)
-        return validator
+        if isinstance(ref_df, Validator):
+            ref_df = ref_df.df
+        try:
+            joined_df = self.df.join(
+                broadcast(ref_df.select(field_ref)),
+                col(column) == col(field_ref),
+                'left'
+            )
+            if valid:
+                if result_column is None:
+                    result_column = column + '_VALID'
+                dataframe = joined_df.withColumn(
+                    result_column, when(
+                        col(field_ref).isNotNull(), 1).otherwise(0)
+                ).drop(field_ref)
+            else:
+                dataframe = joined_df.withColumn(
+                    column,
+                    when(col(field_ref).isNotNull(),
+                         'NOT VALID').otherwise(col(column))
+                ).drop(field_ref)
+            validator = Validator(dataframe)
+            return validator
+        except Exception as e:
+            error_msg = f"Column '{column}' not found. Columns present: {self.df.columns}"
+            raise ValidationError(error_msg) from e
 
     def check_data_length(self,
                           column: str,
