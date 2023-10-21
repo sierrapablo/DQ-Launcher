@@ -26,8 +26,10 @@ class TestCheckInformedFields(unittest.TestCase):
         Test case to validate the default behavior of 'check_informed_fields' method.
         """
         # Test data and columns setup
-        input_data = [('Paula', '30'), ('Marlene', None),
-                      (None, '67'), ('Juan', '30')]
+        input_data = [('Paula', '30'),
+                      ('Marlene', None),
+                      (None, '67'),
+                      ('Juan', '30')]
         columns = ['nombre', 'edad']
 
         # Create DataFrame and Validator instance
@@ -56,8 +58,10 @@ class TestCheckInformedFields(unittest.TestCase):
         with a custom result column name.
         """
         # Test data and columns setup
-        input_data = [('Paula', '30'), ('Marlene', None),
-                      (None, '67'), ('Juan', '30')]
+        input_data = [('Paula', '30'),
+                      ('Marlene', None),
+                      (None, '67'),
+                      ('Juan', '30')]
         columns = ['nombre', 'edad']
 
         # Create DataFrame and Validator instance
