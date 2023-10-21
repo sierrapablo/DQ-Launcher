@@ -37,13 +37,14 @@ class Validator:
         """
         if result_column is None:
             result_column = column + '_INFORMED'
-        if column not in self.df.columns:
-            raise ValidationError(
-                f"Column '{column}' not found. Columns present: {self.df.columns}")
-        validator = self.df.withColumn(
-            result_column,
-            when(col(column).isNotNull(), 1).otherwise(0))
-        return validator
+        try:
+            validator = self.df.withColumn(
+                result_column,
+                when(col(column).isNotNull(), 1).otherwise(0))
+            return validator
+        except Exception as e:
+            error_msg = f"Column '{column}' not found. Columns present: {self.df.columns}"
+            raise ValidationError(error_msg) from e
 
     def check_unique_fields(self,
                             column: str,
