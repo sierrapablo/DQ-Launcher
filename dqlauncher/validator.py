@@ -29,7 +29,8 @@ class Validator(DataFrame):
         a new column with 1 when it is, and 0 when if it is not.
 
         Args:
-            column (str): Name of the column to validate.result_column (Optional[str]): name of the resulted column.
+            column (str): Name of the column to validate.
+            result_column (Optional[str]): name of the resulted column.
                 If not provided, default column + '_INFORMED'
 
         Returns:
