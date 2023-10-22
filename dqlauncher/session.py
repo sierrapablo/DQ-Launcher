@@ -16,7 +16,7 @@ class DQLauncherSession:
     builder = SparkSession.builder
 
     def __init__(self, appName="DQ Launcher App", master="local[*]", spark_config=None):
-        super(DQLauncherSession, self).__init__()
+        self.builder = SparkSession.builder
         if appName:
             self.builder.appName(appName)
         if master:
