@@ -6,7 +6,7 @@ There are no supported versions already.
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 0.1     | :x:                |
+| 1.0     | :x:                |
 
 
 ## Reporting a Vulnerability

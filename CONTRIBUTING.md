@@ -11,6 +11,7 @@ Before contributing, please make sure to read and follow our contribution guidel
 2. **Clone Your Forked Repository**: Clone the fork to your local machine using the command `git clone https://github.com/sierrapablo/DQ-Launcher.git`.
 
 3. **Create a Branch**: Create a new branch to work on your feature or bug fix. You can do this using `git checkout -b your-branch-name`.
+    (the name of your branch should be something like: yourusername--originbranch)
 
 4. **Develop Your Contribution**: Make your changes and improvements in the new branch. Make sure to follow the project's coding style and conventions.
 

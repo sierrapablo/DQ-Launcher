@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "dqlauncher"
-version = "0.1"
-description = "DataQuality functions over PySpark DataFrames"
+version = "1.0"
+description = "DataQuality functions over pyspark.sql SparkSession and DataFrame"
 authors = ["Pablo Sierra Lorente <pablosierralorente@outlook.es>"]
 license = "MIT"
 homepage = "https://github.com/sierrapablo/DQ-Launcher"
