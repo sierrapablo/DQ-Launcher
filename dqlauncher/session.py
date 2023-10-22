@@ -11,12 +11,21 @@ from pyspark.sql import SparkSession
 from dqlauncher.validator import Validator
 
 
-class SparkDQLauncher(SparkSession):
+class DQLauncherSession:
 
-    def __init__(self, appName="DQ Launcher App"):
-        super().__init__(appName)
+    builder = SparkSession.builder
 
-    def CreateValidator(self, data, columns):
-        spark_df = self.createDataFrame(data, columns)
-        validator = Validator(self, spark_df)
-        return validator
+    def __init__(self, appName="DQ Launcher App", master="local[*]", spark_config=None):
+        super(DQLauncherSession, self).__init__()
+        if appName:
+            self.builder.appName(appName)
+        if master:
+            self.builder.master(master)
+        if spark_config:
+            for key, value in spark_config.items():
+                self.builder.config(key, value)
+        self.spark = self.builder.getOrCreate()
+
+    def createValidator(self, data, schema):
+        spark_df = self.spark.createDataFrame(data, schema=schema)
+        return Validator(spark_df)

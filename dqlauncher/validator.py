@@ -14,12 +14,12 @@ from pyspark.sql.functions import *
 from pyspark.sql.types import DataType
 from pyspark.sql.window import Window
 from typing import Optional, Union
+from pyspark.sql import DataFrame
 
+class Validator(DataFrame):
 
-class Validator:
-
-    def __init__(self, df: DataFrame):
-        self.df = df
+    def __init__(self, df):
+        super(Validator, self).__init__(df._jdf, df.sql_ctx)
 
     def check_informed_fields(self,
                               column: str,
@@ -33,15 +33,15 @@ class Validator:
                 If not provided, default column + '_INFORMED'
 
         Returns:
-            validator (Validator): Validator with the added column.
+            validator (SparkValidator): Validator with the added column.
         """
         if result_column is None:
             result_column = column + '_INFORMED'
         try:
-            dataframe = self.df.withColumn(
+            df = self.withColumn(
                 result_column,
                 when(col(column).isNotNull(), 1).otherwise(0))
-            validator = Validator(dataframe)
+            validator = Validator(df)
             return validator
         except Exception as e:
             error_msg = f"Column '{column}' not found. Columns present: {self.df.columns}"
