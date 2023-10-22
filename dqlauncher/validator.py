@@ -44,7 +44,7 @@ class Validator(DataFrame):
             validator = Validator(df)
             return validator
         except Exception as e:
-            error_msg = f"Column '{column}' not found. Columns present: {self.df.columns}"
+            error_msg = f"Column '{column}' not found. Columns present: {self.columns}"
             raise ValidationError(error_msg) from e
 
     def check_unique_fields(self,
