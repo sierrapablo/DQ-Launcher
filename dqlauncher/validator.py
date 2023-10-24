@@ -16,6 +16,7 @@ from pyspark.sql.window import Window
 from typing import Optional, Union
 from pyspark.sql import DataFrame
 
+
 class Validator(DataFrame):
 
     def __init__(self, df):
@@ -72,8 +73,8 @@ class Validator(DataFrame):
             max_count = max('COUNT').over(window_spec)
             df_unique_flag = df_with_counts.withColumn(
                 result_column,
-                when((col(column).isNotNull()) & \
-                     (col('COUNT') == 1) & \
+                when((col(column).isNotNull()) &
+                     (col('COUNT') == 1) &
                      (col('COUNT') == max_count), 1).otherwise(0)
             ).drop('COUNT')
             return Validator(df_unique_flag)
@@ -148,16 +149,18 @@ class Validator(DataFrame):
         """
         if result_column is None:
             result_column = column + '_LENGHT_CHECKED'
-        if column not in self.columns:
-            raise ValidatorError(
-                f"Column '{column}' not found in the Validator.")
-        length_column = expr(f'length({column})')
-        match_length = when(length_column == data_length, 1).otherwise(0)
-        validator = self.withColumn(
-            result_column,
-            match_length.cast('int')
-        )
-        return validator
+        try:
+            length_column = expr(f'length({column})')
+            match_length = when(length_column == data_length, 1).otherwise(0)
+            dataframe = self.withColumn(
+                result_column,
+                match_length.cast('int')
+            )
+            validator = Validator(dataframe)
+            return validator
+        except Exception as e:
+            error_msg = f"Column '{column}' not found. Columns present: {self.columns}"
+            raise ValidationError(error_msg) from e
 
     def check_data_type(self,
                         column: str,
