@@ -176,14 +176,15 @@ class Validator(DataFrame):
         Returns:
             int: 1 if the column is of the specific type, 0 if it is not.
         """
-        if column not in self.columns:
-            raise ValidatorError(
-                f"Column '{column}' not found in the Validator.")
-        column_data_type = self.schema[column].dataType
-        if column_data_type == data_type:
-            return 1
-        else:
-            return 0
+        try:
+            column_data_type = self.schema[column].dataType
+            if isinstance(column_data_type, data_type):
+                return int(1)
+            else:
+                return int(0)
+        except Exception as e:
+            error_msg = f"Column '{column}' not found. Columns present: {self.columns}"
+            raise ValidationError(error_msg) from e
 
     def std_name(self,
                  column: str,
