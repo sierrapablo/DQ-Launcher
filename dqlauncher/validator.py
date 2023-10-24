@@ -105,8 +105,6 @@ class Validator(DataFrame):
         Returns:
             validator (Validator): Validator with the added column or modified values.
         """
-        # if isinstance(ref_df, Validator):
-        #     ref_df = ref_df
         try:
             joined_df = self.join(
                 broadcast(ref_df.select(field_ref)),
