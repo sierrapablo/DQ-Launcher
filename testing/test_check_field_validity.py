@@ -31,7 +31,7 @@ class TestCheckFieldValidity(unittest.TestCase):
         self.input_columns = ['nombre', 'edad']
         self.validator_test = self.launcher.createValidator(
             self.input_data, schema=self.input_columns)
-        
+
         self.ref_data = [('Marlene',)]
         self.ref_columns = ['ref_nombre']
         self.validator_ref = self.launcher.createValidator(
@@ -59,6 +59,7 @@ class TestCheckFieldValidity(unittest.TestCase):
         self.validate_result(result_vd=result_vd,
                              expected_output=expected_output,
                              expected_columns=expected_columns)
-        
+
+
 if __name__ == '__main__':
     unittest.main()
