@@ -104,10 +104,10 @@ class Validator(DataFrame):
         Returns:
             validator (Validator): Validator with the added column or modified values.
         """
-        if isinstance(ref_df, Validator):
-            ref_df = ref_df.df
+        # if isinstance(ref_df, Validator):
+        #     ref_df = ref_df
         try:
-            joined_df = self.df.join(
+            joined_df = self.join(
                 broadcast(ref_df.select(field_ref)),
                 col(column) == col(field_ref),
                 'left'
@@ -128,7 +128,7 @@ class Validator(DataFrame):
             validator = Validator(dataframe)
             return validator
         except Exception as e:
-            error_msg = f"Column '{column}' not found. Columns present: {self.df.columns}"
+            error_msg = f"Column '{column}' not found. Columns present: {self.columns}"
             raise ValidationError(error_msg) from e
 
     def check_data_length(self,
