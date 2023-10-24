@@ -188,30 +188,31 @@ class Validator(DataFrame):
 
     def std_name(self,
                  column: str,
-                 mode: Optional[str] = 'overwrite') -> DataFrame:
+                 mode: Optional[str] = 'overwrite') -> "Validator":
         """
         Standardizes fields in the specified column following
         rules for standardization of names and surnames. Handles compound names and surnames.
 
         Args:
-            dataframe (DataFrame): The dataframe containing the column.
             column (str): Name of the column to be standardized.
             mode (str, optional): Standardization mode
                                   ('overwrite' by default, also accepts 'add').
 
         Returns:
-            dataframe (DataFrame): DataFrame with the standardized column.
+            validator (Validator): Validator with the standardized column.
         """
-        if column not in self.columns:
-            raise ValidatorError(
-                f"Column '{column}' not found in the Validator.")
-        if mode == 'add':
-            validator = self.withColumn(column + '_NO_STD', col(column))
-        standardized_vd = validator.withColumn(
-            column, upper(trim(regexp_replace(column, r'[^\w\s-]', ''))))
-        standardized_vd = standardized_vd.withColumn(
-            column, regexp_replace(column, r'-', ' '))
-        return standardized_vd
+        try:
+            if mode == 'add':
+                self.withColumn(column + '_NO_STD', col(column))
+            standardized_df = self.withColumn(
+                column, upper(trim(regexp_replace(column, r'[^\w\s-]', ''))))
+            standardized_df = standardized_df.withColumn(
+                column, regexp_replace(column, r'-', ' '))
+            validator = Validator(standardized_df)
+            return validator
+        except Exception as e:
+            error_msg = f"Column '{column}' not found. Columns present: {self.columns}"
+            raise ValidationError(error_msg) from e
 
     def get_null_count(self, column: str) -> int:
         """
