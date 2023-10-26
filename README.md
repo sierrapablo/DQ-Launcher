@@ -7,29 +7,30 @@ pip install dqlauncher
 
 ## Usage
 First, import the DQ Launcher Session class and the Validator classes:
-from dqlauncher.session import SparkDQLauncher
+from dqlauncher.session import DQLauncherSession
 
-You need to initialize a SparkDQLauncher object. It is a heritage class from SparkSession that allows you to create Validator objects in Spark context.
+You need to initialize a DQLauncherSession object. It is a heritage class from SparkSession that allows you to create Validator objects in Spark context.
 
 ## Initialization
 You can initialize a Validator object as follows:
-dq_launcher = SparkDQLauncher(name_of your_app)
+dq_launcher = DQLauncherSession(name_of your_app)
 
 validator = dq_launcher.CreateValidator(data, columns)
 
 Now you have a Validator Object. It is a full functional PysPark.DataFrame with added functionalities. You can use all methods and features a DataFrame can handle, and perform Data Quality Validations over this object.
 
-## Basic Validations
+## Some Features:
+### Basic Validations
 - Check for null values
 - Check for unique values
 - Validate data types
 
-## Advanced Validations
+### Advanced Validations
 - Validate fields against a reference table
 - Validate data length
 - Standardize names
 
-## Statistics
+### Statistics
 - Count and get the percentage of null values
 - Count and get the percentage of unique values
 
