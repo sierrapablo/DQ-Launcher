@@ -352,3 +352,20 @@ class Validator(DataFrame):
         except Exception as e:
             error_msg = f"Column '{column}' not found. Columns present: {self.columns}"
             raise ValidationError(error_msg) from e
+        
+    def drop_duplicates(self, *columns: str, mode: Optional[str]='concat') -> "Validator":
+        try:
+            if mode == 'concat':
+                concatenated_columns = concat_ws("", *columns)
+                dataframe = self \
+                    .withColumn("concatenated",concatenated_columns) \
+                    .dropDuplicates(subset=["concatenated"]) \
+                    .drop("concatenated")
+            elif mode == 'separate':
+                dataframe = self.dropDuplicates(subset=columns)
+            else:
+                raise ValueError("Mode not valid. Use 'concat' or 'separate'.")
+            return Validator(dataframe)
+        except Exception as e:
+            error_msg = f"Error trying to drop duplicates: {str(e)}"
+            raise ValidationError(error_msg) from e
