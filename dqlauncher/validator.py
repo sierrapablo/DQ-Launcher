@@ -344,6 +344,18 @@ class Validator(DataFrame):
         return df_filtered
 
     def drop_nulls(self, *columns: str) -> "Validator":
+        """
+        Drops rows in the DataFrame where specified columns do have null values.
+
+        Args:
+            *columns (str): Variable length argument list of column names to filter.
+
+        Returns:
+            Validator: A new Validator instance with the filtered columns.
+
+        Raises:
+            ValidationError: If any of the specified columns are not found in the Validator.
+        """
         try:
             dataframe = self
             for column in columns:
@@ -354,6 +366,21 @@ class Validator(DataFrame):
             raise ValidationError(error_msg) from e
         
     def drop_duplicates(self, *columns: str, mode: Optional[str]='concat') -> "Validator":
+        """
+        Drop duplicate rows based on specified columns in the Validator.
+
+        Args:
+            *columns (str): Variable length argument list of column names to identify duplicates.
+            mode (str, optional): Mode of dropping duplicates. 'concat' concatenates columns and drops duplicates, 
+                                'separate' drops duplicates in each specified column separately. Default is 'concat'.
+
+        Returns:
+            Validator: A new Validator instance with duplicates removed.
+
+        Raises:
+            ValueError: If an invalid mode is provided.
+            ValidationError: If any of the specified columns are not found in the Validator.
+        """
         try:
             if mode == 'concat':
                 concatenated_columns = concat_ws("", *columns)
