@@ -345,9 +345,10 @@ class Validator(DataFrame):
 
     def drop_nulls(self, *columns: str) -> "Validator":
         try:
+            dataframe = self
             for column in columns:
-                dataframe = self.filter(col(column).isNotNull())
-                return Validator(dataframe)
+                dataframe = dataframe.filter(col(column).isNotNull())
+            return Validator(dataframe)
         except Exception as e:
             error_msg = f"Column '{column}' not found. Columns present: {self.columns}"
             raise ValidationError(error_msg) from e
