@@ -1,6 +1,5 @@
 import unittest
 from dqlauncher.session import DQLauncherSession
-from dqlauncher.utilities.errors import ValidationError
 
 
 class TestCheckDataLength(unittest.TestCase):
