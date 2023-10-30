@@ -217,14 +217,14 @@ class Validator(DataFrame):
         Counts the number of null values in a column of a PySpark DataFrame.
 
         Args:
-            dataframe (DataFrame): PySpark DataFrame.
             column (str): Name of the column to be validated.
 
         Returns:
             null_count (int): Number of null values in the column.
         """
         if column not in self.columns:
-            raise ValueError(f"Column '{column}' not found in the Validator.")
+            error_msg = f"Column '{column}' not found. Columns present: {self.columns}"
+            raise ValidationError(error_msg)
         null_count = self.where(col(column).isNull()).count()
         return int(null_count)
 
@@ -240,7 +240,8 @@ class Validator(DataFrame):
             null_percentage_rounded (float): Percentage value of nulls in the column.
         """
         if column not in self.columns:
-            raise ValueError(f"Column '{column}' not found in the Validator.")
+            error_msg = f"Column '{column}' not found. Columns present: {self.columns}"
+            raise ValidationError(error_msg)
         total_count = self.count()
         null_count = self.get_null_count(column)
         null_percentage = (null_count / total_count) * 100.0
@@ -259,8 +260,8 @@ class Validator(DataFrame):
             informed_count (int): Number of informed fields in the column.
         """
         if column not in self.columns:
-            raise ValidatorError(
-                f"Column '{column}' not found in the Validator.")
+            error_msg = f"Column '{column}' not found. Columns present: {self.columns}"
+            raise ValidationError(error_msg)
         informed_count = self.where(col(column).isNotNull()).count()
         return int(informed_count)
 
@@ -276,8 +277,8 @@ class Validator(DataFrame):
             informed_percentage_rounded (float): Percentage value of informed fields in the column.
         """
         if column not in self.columns:
-            raise ValidatorError(
-                f"Column '{column}' not found in the Validator.")
+            error_msg = f"Column '{column}' not found. Columns present: {self.columns}"
+            raise ValidationError(error_msg)
         total_count = self.count()
         informed_count = self.get_informed_count(column)
         informed_percentage = (informed_count / total_count) * 100.0
@@ -296,8 +297,8 @@ class Validator(DataFrame):
             unique_count (int): Number of unique values in the column.
         """
         if column not in self.columns:
-            raise ValidatorError(
-                f"Column '{column}' not found in the Validator.")
+            error_msg = f"Column '{column}' not found. Columns present: {self.columns}"
+            raise ValidationError(error_msg)
         unique_count = self.select(column).distinct().count()
         return int(unique_count)
 
@@ -313,8 +314,8 @@ class Validator(DataFrame):
             unique_percentage_rounded (float): Percentage value of unique values in the column.
         """
         if column not in self.columns:
-            raise ValidatorError(
-                f"Column '{column}' not found in the Validator.")
+            error_msg = f"Column '{column}' not found. Columns present: {self.columns}"
+            raise ValidationError(error_msg)
         total_count = self.count()
         unique_count = self.get_unique_count(column)
         unique_percentage = (unique_count / total_count) * 100.0
@@ -336,8 +337,8 @@ class Validator(DataFrame):
         """
         try:
             if column not in self.columns:
-                raise ValidatorError(
-                    f"Column '{column}' not found in the Validator.")
+                error_msg = f"Column '{column}' not found. Columns present: {self.columns}"
+                raise ValidationError(error_msg)
             df_filtered = self.filter(col(column) == value)
         except Exception as e:
             raise ValidatorError('Error with Validator: ' + str(e))
